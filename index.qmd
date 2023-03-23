@@ -1,9 +1,9 @@
 ::: {.content-visible when-format="html"}
 <h2> Welcome!</h2>
 
-**This is the on-line edition of *Deep Learning and Scientific Computing with R `torch`*! Visit the [GitHub repository for this site](https://github.com/skeydan/Deep-Learning-and-Scientific-Computing-with-R-torch), or buy a physical copy from the publisher, [CRC Press](https://doi.org/10.1201/9781003275923). You'll also find the book at the usual outlets, e.g., [Amazon](https://www.amazon.com/Learning-Scientific-Computing-torch-Chapman/dp/1032231394).**
+**This is the on-line edition of *Deep Learning and Scientific Computing with R `torch`*, written by [Sigrid Keydana](https://divergences.xyz/). Visit the [GitHub repository for this site](https://github.com/skeydan/Deep-Learning-and-Scientific-Computing-with-R-torch), or buy a physical copy from the publisher, [CRC Press](https://doi.org/10.1201/9781003275923). You'll also find the book at the usual outlets, e.g., [Amazon](https://www.amazon.com/Learning-Scientific-Computing-torch-Chapman/dp/1032231394).**
 
-**This online work by [Sigrid Keydana](https://divergences.xyz/) is licensed under a** <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">**Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License**</a>**.**
+**This on-line work  is licensed under a** <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">**Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License**</a>**.**
 :::
 
 # Preface {.unnumbered .unlisted}

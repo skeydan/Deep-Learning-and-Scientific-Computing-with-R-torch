@@ -15,4 +15,5 @@ resources/*.pdf
 resources/*.aux
 resources/*synctex.gz
 crc
+docs/Deep-Learning-and-Scientific-Computing-with-R-torch.pdf
 
