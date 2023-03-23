@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-99.9.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Deep Learning and Scientific Computing with R torch - 22&nbsp; Audio classification</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./other_overview.html" rel="next">
+<link href="./time_series.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./dl_overview.html">Deep learning with torch</a></li><li class="breadcrumb-item"><a href="./audio_classification.html"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Audio classification</span></a></li></ol></nav>
+      <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+      </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Deep Learning and Scientific Computing with R torch</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">Getting familiar with torch</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./basics_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Overview</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./what_is_torch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">On <code>torch</code>, and how to get it</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./tensors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Tensors</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Autograd</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optim_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Function minimization with <em>autograd</em></span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./network_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">A neural network from scratch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./modules.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Modules</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optimizers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Optimizers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./loss_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Loss functions</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optim_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Function minimization with L-BFGS</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./network_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Modularizing the neural network</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">Deep learning with torch</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./dl_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Overview</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Loading data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./training_with_luz.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Training with luz</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./image_classification_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">A first go at image classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./overfitting.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Making models generalize</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./training_efficiency.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Speeding up training</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./image_classification_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Image classification, take two: Improving performance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./image_segmentation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Image segmentation</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./tabular_data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Tabular data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Time series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./audio_classification.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Audio classification</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">Other things to do with torch: Matrices, Fourier Transform, and Wavelets</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./other_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Overview</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./matrix_computations_leastsquares.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Matrix computations: Least-squares problems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./matrix_computations_convolution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Matrix computations: Convolution</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./fourier_transform_dft.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Exploring the Discrete Fourier Transform (DFT)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./fourier_transform_fft.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">The Fast Fourier Transform (FFT)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wavelets.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Wavelets</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#classifying-speech-data" id="toc-classifying-speech-data" class="nav-link active" data-scroll-target="#classifying-speech-data"><span class="header-section-number">22.1</span> Classifying speech data</a></li>
+  <li><a href="#two-equivalent-representations" id="toc-two-equivalent-representations" class="nav-link" data-scroll-target="#two-equivalent-representations"><span class="header-section-number">22.2</span> Two equivalent representations</a></li>
+  <li><a href="#combining-representations-the-spectrogram" id="toc-combining-representations-the-spectrogram" class="nav-link" data-scroll-target="#combining-representations-the-spectrogram"><span class="header-section-number">22.3</span> Combining representations: The spectrogram</a></li>
+  <li><a href="#training-a-model-for-audio-classification" id="toc-training-a-model-for-audio-classification" class="nav-link" data-scroll-target="#training-a-model-for-audio-classification"><span class="header-section-number">22.4</span> Training a model for audio classification</a>
+  <ul class="collapse">
+  <li><a href="#baseline-setup-training-a-convnet-on-spectrograms" id="toc-baseline-setup-training-a-convnet-on-spectrograms" class="nav-link" data-scroll-target="#baseline-setup-training-a-convnet-on-spectrograms"><span class="header-section-number">22.4.1</span> Baseline setup: Training a convnet on spectrograms</a></li>
+  <li><a href="#variation-one-use-a-mel-scale-spectrogram-instead" id="toc-variation-one-use-a-mel-scale-spectrogram-instead" class="nav-link" data-scroll-target="#variation-one-use-a-mel-scale-spectrogram-instead"><span class="header-section-number">22.4.2</span> Variation one: Use a Mel-scale spectrogram instead</a></li>
+  <li><a href="#variation-two-complex-valued-spectograms" id="toc-variation-two-complex-valued-spectograms" class="nav-link" data-scroll-target="#variation-two-complex-valued-spectograms"><span class="header-section-number">22.4.3</span> Variation two: Complex-valued spectograms</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span id="sec:audio-classification" class="quarto-section-identifier"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Audio classification</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<p>In our final chapter on deep learning, we look at the fascinating topic of audio signals. And here, part of my goal is to convince you (if you aren’t convinced yet) of the utmost importance of <em>domain knowledge</em>. Let me explain.</p>
+<p>Far too often, machine learning is seen as a magical device that, when employed in a technically correct way, will yield great results, however little the model developer (or user) may know about the domain in question. In previous chapters, we’ve already seen that this is not true, not even in the case of seemingly “simple” datasets. Essentially, we saw that pre-processing matters – <em>always</em> – and that to adequately pre-process data, we need to know what they’re supposed to represent. However, techniques of incorporating domain knowledge into the machine learning workflow can go a <em>lot</em> further. This is a topic that, definitely, deserves a book of its own. But this chapter hopes to offer something like a glimpse ahead: With audio signals, we will encounter a technique that, beyond being of great appeal in itself, has the strength of generalizing to a wide range of applications that deal with comparable data.</p>
+<p>Let’s start by characterizing the task.</p>
+<section id="classifying-speech-data" class="level2" data-number="22.1">
+<h2 data-number="22.1" class="anchored" data-anchor-id="classifying-speech-data"><span class="header-section-number">22.1</span> Classifying speech data</h2>
+<p>The speech command dataset (<span class="citation" data-cites="abs-1804-03209">Warden (<a href="references.html#ref-abs-1804-03209" role="doc-biblioref">2018</a>)</span>) comes with <code>torchaudio</code>, a package that does for auditory data what <code>torchvision</code> does for images and video. As of this writing, there are two versions; the one provided by <code>torchaudio</code> is number one. In that version, the dataset holds recordings of thirty different, one- or two-syllable words, uttered by different speakers; there are about 65,000 audio files overall. The task is to predict, from the audio recording, which word was spoken.</p>
+<p>To see what is involved, we download and inspect the data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(torch)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(torchaudio)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(luz)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>ds <span class="ot">&lt;-</span> <span class="fu">speechcommand_dataset</span>(</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">root =</span> <span class="st">"~/.torch-datasets"</span>, </span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">url =</span> <span class="st">"speech_commands_v0.01"</span>,</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">download =</span> <span class="cn">TRUE</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>ds<span class="sc">$</span>classes</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>[1]  "bed"    "bird"   "cat"    "dog"    "down"   "eight"
+[7]  "five"   "four"   "go"     "happy"  "house"  "left"
+[32] " marvin" "nine"   "no"     "off"    "on"     "one"
+[19] "right"  "seven" "sheila" "six"    "stop"   "three"
+[25]  "tree"   "two"    "up"     "wow"    "yes"    "zero" </code></pre>
+<p>Picking a sample at random, we see that the information we’ll need is contained in four properties: <code>waveform</code>, <code>sample_rate</code>, <code>label_index</code>, and <code>label</code>.</p>
+<p>The first, <code>waveform</code>, will be our predictor.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>sample <span class="ot">&lt;-</span> ds[<span class="dv">2000</span>]</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(sample<span class="sc">$</span>waveform)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>[1]     1 16000</code></pre>
+<p>Individual tensor values are centered at zero, and range between -1 and 1. There are 16,000 of them, reflecting the fact that the recording lasted for one second, and was registered at (or has been converted to, by the dataset creators) a rate of 16,000 samples per second. The latter information is stored in <code>sample$sample_rate</code>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>sample<span class="sc">$</span>sample_rate</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>[1] 16000</code></pre>
+<p>All recordings have been sampled at the same rate. Their length almost always equals one second; the – very – few ones that are minimally longer we can safely truncate.</p>
+<p>Finally, the target is stored, in integer form, in <code>sample$label_index</code>, with the corresponding word available from <code>sample$label</code>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>sample<span class="sc">$</span>label</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>sample<span class="sc">$</span>label_index</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>[1] "bird"
+torch_tensor
+2
+[ CPULongType{} ]</code></pre>
+<p>How does this audio signal “look” (<a href="#fig-audio-bird-waveform">fig.&nbsp;<span>22.1</span></a>)?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(sample<span class="sc">$</span>waveform[<span class="dv">1</span>]),</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> <span class="fu">as.numeric</span>(sample<span class="sc">$</span>waveform[<span class="dv">1</span>])</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> y)) <span class="sc">+</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">size =</span> <span class="fl">0.3</span>) <span class="sc">+</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">paste0</span>(</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>      <span class="st">"The spoken word </span><span class="sc">\"</span><span class="st">"</span>, sample<span class="sc">$</span>label, <span class="st">"</span><span class="sc">\"</span><span class="st">: Sound wave"</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"time"</span>) <span class="sc">+</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"amplitude"</span>) <span class="sc">+</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-audio-bird-waveform" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/audio-bird-waveform.png" class="quarto-discovered-preview-image img-fluid figure-img" alt="A sound wave, displaying amplitude over time."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;22.1: The spoken word “bird”, in time-domain representation.</figcaption><p></p>
+</figure>
+</div>
+<p>What we see is a sequence of amplitudes, reflecting the sound wave produced by someone saying “bird”. Put differently, we have here a time series of “loudness values”. Even for experts, guessing <em>which</em> word resulted in those amplitudes is an impossible task. This is where domain knowledge is relevant. The expert may not be able to make much of the signal <em>in this representation</em>; but they may know a way to more meaningfully represent it.</p>
+<p>At this point, you may be thinking: Right; but just because the task is impossible for human beings it need not be impossible for a machine! After all, a neural network and a person process information very differently. Maybe an RNN, trained on these waves, can learn to correctly map them to a set of words!</p>
+<p>That could indeed be – you may want to try – but it turns out there is a better way, one that both appeals to our, human, desire for understanding <em>and</em> uses deep learning in a most beneficient way.</p>
+<p>This better way is owed to a mathematical fact that – for me, at least – never ceases to inspire awe and wonder.</p>
+</section>
+<section id="two-equivalent-representations" class="level2" data-number="22.2">
+<h2 data-number="22.2" class="anchored" data-anchor-id="two-equivalent-representations"><span class="header-section-number">22.2</span> Two equivalent representations</h2>
+<p>Imagine that instead of as a sequence of amplitudes over time, the above wave were represented in a way that had no information about time at all. Next, imagine we took that representation and tried to recover the original signal. For that to be possible, the new representation would somehow have to contain “just as much” information as the wave we started from. That “just as much” is obtained by the <em>Fourier Transform</em>, and it consists of the magnitudes and phase shifts of the different <em>frequencies</em> that make up the signal. In part three, we’ll play around quite a bit with the Fourier Transform, so here I’ll keep the introduction brief. Instead, I’ll focus on the elegant symbiosis that will result, once we’ve arrived at the final pre-processing step. But we’re not quite there yet.</p>
+<p>To start, how does the Fourier-transformed version of the “bird” sound wave look? We obtain it by calling <code>torch_fft_fft()</code> (where <code>fft</code> stands for Fast Fourier Transform):</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>dft <span class="ot">&lt;-</span> <span class="fu">torch_fft_fft</span>(sample<span class="sc">$</span>waveform)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(dft)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>[1]     1 16000</code></pre>
+<p>The length of this tensor is the same; however, its values are not in chronological order. Instead, they represent the <em>Fourier coefficients</em>, corresponding to the frequencies contained in the signal. The higher their magnitude, the more they contribute to the signal (<a href="#fig-audio-bird-dft">fig.&nbsp;<span>22.2</span></a>):</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>mag <span class="ot">&lt;-</span> <span class="fu">torch_abs</span>(dft[<span class="dv">1</span>, ])</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> <span class="dv">1</span><span class="sc">:</span>(<span class="fu">length</span>(sample<span class="sc">$</span>waveform[<span class="dv">1</span>]) <span class="sc">/</span> <span class="dv">2</span>),</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> <span class="fu">as.numeric</span>(mag[<span class="dv">1</span><span class="sc">:</span><span class="dv">8000</span>])</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> y)) <span class="sc">+</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">size =</span> <span class="fl">0.3</span>) <span class="sc">+</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">paste0</span>(</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>      <span class="st">"The spoken word </span><span class="sc">\"</span><span class="st">"</span>,</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>      sample<span class="sc">$</span>label,</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>      <span class="st">"</span><span class="sc">\"</span><span class="st">: Discrete Fourier Transform"</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"frequency"</span>) <span class="sc">+</span></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"magnitude"</span>) <span class="sc">+</span></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-audio-bird-dft" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/audio-bird-dft.png" class="img-fluid figure-img" alt="A curve showing magnitude for Fourier bins from 0 to 8000. Above 4000, nearly all are zero."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;22.2: The spoken word “bird”, in frequency-domain representation.</figcaption><p></p>
+</figure>
+</div>
+<p>From this, alternate, representation, we could go back to the original sound wave by taking the frequencies present in the signal, weighting them according to their coefficients, and adding them up. (That opposite direction is called the <em>Inverse Fourier Transform</em>, and available in <code>torch</code> as <code>torch_fft_ifft()</code>.)</p>
+<p>This, in itself, is incredibly fascinating; but how does it help us with our task of classifying audio signals? Were we to work with the sound waves themselves, we’d feed them into an RNN. With frequencies, there is no recurrence relation; so RNNs are not an option. We could use a feed-forward neural network, then. But there is reason to expect this to work particularly well.</p>
+</section>
+<section id="combining-representations-the-spectrogram" class="level2" data-number="22.3">
+<h2 data-number="22.3" class="anchored" data-anchor-id="combining-representations-the-spectrogram"><span class="header-section-number">22.3</span> Combining representations: The spectrogram</h2>
+<p>In fact, what really would help us is a synthesis of both representations; some sort of “have your cake and eat it, too”. What if we could divide the signal into small chunks, and run the Fourier Transform on each of them? As you may have guessed from this leadup, this indeed is something we can do; and the representation it creates is called the <em>spectrogram</em>.</p>
+<p>With a spectrogram, we still keep some time-domain information – some, since there is an unavoidable loss in granularity. On the other hand, for each of the time segments, we learn about their spectral composition. There’s an important point to be made, though. The resolutions we get in <em>time</em> versus in <em>frequency</em>, respectively, are inversely related. If we split up the signals into many chunks (called “windows”), the frequency representation per window will not be very fine-grained. Conversely, if we want to get better resolution in the frequency domain, we have to choose longer windows, thus losing information about how spectral composition varies over time. It seems, then, that all we can do is eat <em>half</em> a cake, and take pleasure in the sight of the other half.</p>
+<p>Well, all said so far is correct; but as you’ll see, this is far less of a problem than it may seem now.</p>
+<p>Before we unveil the mystery, though, let’s create and inspect such a spectrogram for our example signal. In the following code snippet, the size of the – overlapping – windows is chosen so as to allow for reasonable granularity in both the time and the frequency domain. We’re left with sixty-three windows, and, for each window, obtain two hundred fifty-seven coefficients:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>fft_size <span class="ot">&lt;-</span> <span class="dv">512</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>window_size <span class="ot">&lt;-</span> <span class="dv">512</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>power <span class="ot">&lt;-</span> <span class="fl">0.5</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>spectrogram <span class="ot">&lt;-</span> <span class="fu">transform_spectrogram</span>(</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_fft =</span> fft_size,</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">win_length =</span> window_size,</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">normalized =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">power =</span> power</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>spec <span class="ot">&lt;-</span> <span class="fu">spectrogram</span>(sample<span class="sc">$</span>waveform)<span class="sc">$</span><span class="fu">squeeze</span>()</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(spec)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>[1]   257 63</code></pre>
+<p>We can display the spectrogram visually (<a href="#fig-audio-spectrogram">fig.&nbsp;<span>22.3</span></a>):</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>bins <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">dim</span>(spec)[<span class="dv">1</span>]</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>freqs <span class="ot">&lt;-</span> bins <span class="sc">/</span> (fft_size <span class="sc">/</span> <span class="dv">2</span> <span class="sc">+</span> <span class="dv">1</span>) <span class="sc">*</span> sample<span class="sc">$</span>sample_rate </span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>log_freqs <span class="ot">&lt;-</span> <span class="fu">log10</span>(freqs)</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>frames <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span>(<span class="fu">dim</span>(spec)[<span class="dv">2</span>])</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>seconds <span class="ot">&lt;-</span> (frames <span class="sc">/</span> <span class="fu">dim</span>(spec)[<span class="dv">2</span>]) <span class="sc">*</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  (<span class="fu">dim</span>(sample<span class="sc">$</span>waveform<span class="sc">$</span><span class="fu">squeeze</span>())[<span class="dv">1</span>] <span class="sc">/</span> sample<span class="sc">$</span>sample_rate)</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="fu">image</span>(<span class="at">x =</span> <span class="fu">as.numeric</span>(seconds),</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>      <span class="at">y =</span> log_freqs,</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>      <span class="at">z =</span> <span class="fu">t</span>(<span class="fu">as.matrix</span>(spec)),</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>      <span class="at">ylab =</span> <span class="st">'log frequency [Hz]'</span>,</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>      <span class="at">xlab =</span> <span class="st">'time [s]'</span>,</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>      <span class="at">col =</span> <span class="fu">hcl.colors</span>(<span class="dv">12</span>, <span class="at">palette =</span> <span class="st">"Light grays"</span>)</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>main <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"Spectrogram, window size = "</span>, window_size)</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>sub <span class="ot">&lt;-</span> <span class="st">"Magnitude (square root)"</span></span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext</span>(<span class="at">side =</span> <span class="dv">3</span>, <span class="at">line =</span> <span class="dv">2</span>, <span class="at">at =</span> <span class="dv">0</span>, <span class="at">adj =</span> <span class="dv">0</span>, <span class="at">cex =</span> <span class="fl">1.3</span>, main)</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext</span>(<span class="at">side =</span> <span class="dv">3</span>, <span class="at">line =</span> <span class="dv">1</span>, <span class="at">at =</span> <span class="dv">0</span>, <span class="at">adj =</span> <span class="dv">0</span>, <span class="at">cex =</span> <span class="dv">1</span>, sub)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-audio-spectrogram" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/audio-spectrogram.png" class="img-fluid figure-img" alt="A three-dimensional plot where the x-axis represents time, the y-axis, frequency, and color, magnitude."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;22.3: The spoken word “bird”: Spectrogram.</figcaption><p></p>
+</figure>
+</div>
+<p>We know that we’ve lost some resolution, in both time and frequency. By displaying the square root of the coefficients’ magnitudes, though – and thus, enhancing sensitivity – we were still able to obtain a reasonable result. (With the <code>Light grays</code> color scheme, brighter shades indicate higher-valued coefficients; darker ones, the opposite.)</p>
+<p>Finally, let’s get back to the crucial question. If this representation is, by necessity, a compromise – why, then, would we want to employ it? This is where we take the deep learning perspective. The spectrogram is a two-dimensional representation: an image. With images, we have access to a rich reservoir of techniques and architectures – among all areas deep learning has been successful in, image recognition still stands out. Soon, you’ll see that for this task, fancy architectures are not even needed; a straightforward convnet will do a very good job.</p>
+</section>
+<section id="training-a-model-for-audio-classification" class="level2" data-number="22.4">
+<h2 data-number="22.4" class="anchored" data-anchor-id="training-a-model-for-audio-classification"><span class="header-section-number">22.4</span> Training a model for audio classification</h2>
+<p>The plan is as follows. We’ll end-to-end train a baseline model, which already will be performing very well. Nevertheless, we’ll try out two ideas, to see if we can improve on that baseline. Should it turn out not to be the case, we’ll still have learned about some important techniques.</p>
+<section id="baseline-setup-training-a-convnet-on-spectrograms" class="level3" data-number="22.4.1">
+<h3 data-number="22.4.1" class="anchored" data-anchor-id="baseline-setup-training-a-convnet-on-spectrograms"><span class="header-section-number">22.4.1</span> Baseline setup: Training a convnet on spectrograms</h3>
+<p>We start by creating a <code>torch::dataset()</code> that, starting from the original <code>speechcommand_dataset()</code>, computes a spectrogram for every sample.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>spectrogram_dataset <span class="ot">&lt;-</span> <span class="fu">dataset</span>(</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">inherit =</span> speechcommand_dataset,</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">initialize =</span> <span class="cf">function</span>(...,</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>                        <span class="at">pad_to =</span> <span class="dv">16000</span>,</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>                        <span class="at">sampling_rate =</span> <span class="dv">16000</span>,</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>                        <span class="at">n_fft =</span> <span class="dv">512</span>,</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>                        <span class="at">window_size_seconds =</span> <span class="fl">0.03</span>,</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>                        <span class="at">window_stride_seconds =</span> <span class="fl">0.01</span>,</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>                        <span class="co"># power = 2 is default for</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>                        <span class="co"># transform_spectrogram()</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>                        <span class="co"># we stay with the default for now,</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>                        <span class="co"># but will make use of this option later</span></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>                        <span class="at">power =</span> <span class="dv">2</span>,</span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>                        <span class="co"># this too will be explained later</span></span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>                        <span class="at">n_mels =</span> <span class="dv">0</span>) {</span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>pad_to <span class="ot">&lt;-</span> pad_to</span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>window_size_samples <span class="ot">&lt;-</span> sampling_rate <span class="sc">*</span></span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>      window_size_seconds</span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>window_stride_samples <span class="ot">&lt;-</span> sampling_rate <span class="sc">*</span></span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>      window_stride_seconds</span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>power <span class="ot">&lt;-</span> power</span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (n_mels <span class="sc">==</span> <span class="dv">0</span>) {</span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span>spectrogram <span class="ot">&lt;-</span> <span class="fu">transform_spectrogram</span>(</span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>        <span class="at">n_fft =</span> n_fft,</span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a>        <span class="at">win_length =</span> self<span class="sc">$</span>window_size_samples,</span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a>        <span class="at">hop_length =</span> self<span class="sc">$</span>window_stride_samples,</span>
+<span id="cb16-27"><a href="#cb16-27" aria-hidden="true" tabindex="-1"></a>        <span class="at">normalized =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb16-28"><a href="#cb16-28" aria-hidden="true" tabindex="-1"></a>        <span class="at">power =</span> self<span class="sc">$</span>power</span>
+<span id="cb16-29"><a href="#cb16-29" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb16-30"><a href="#cb16-30" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb16-31"><a href="#cb16-31" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span>spectrogram <span class="ot">&lt;-</span> <span class="fu">transform_mel_spectrogram</span>(</span>
+<span id="cb16-32"><a href="#cb16-32" aria-hidden="true" tabindex="-1"></a>        <span class="at">n_fft =</span> n_fft,</span>
+<span id="cb16-33"><a href="#cb16-33" aria-hidden="true" tabindex="-1"></a>        <span class="at">win_length =</span> self<span class="sc">$</span>window_size_samples,</span>
+<span id="cb16-34"><a href="#cb16-34" aria-hidden="true" tabindex="-1"></a>        <span class="at">hop_length =</span> self<span class="sc">$</span>window_stride_samples,</span>
+<span id="cb16-35"><a href="#cb16-35" aria-hidden="true" tabindex="-1"></a>        <span class="at">normalized =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb16-36"><a href="#cb16-36" aria-hidden="true" tabindex="-1"></a>        <span class="at">power =</span> self<span class="sc">$</span>power,</span>
+<span id="cb16-37"><a href="#cb16-37" aria-hidden="true" tabindex="-1"></a>        <span class="at">n_mels =</span> n_mels</span>
+<span id="cb16-38"><a href="#cb16-38" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb16-39"><a href="#cb16-39" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb16-40"><a href="#cb16-40" aria-hidden="true" tabindex="-1"></a>    super<span class="sc">$</span><span class="fu">initialize</span>(...)</span>
+<span id="cb16-41"><a href="#cb16-41" aria-hidden="true" tabindex="-1"></a>  },</span>
+<span id="cb16-42"><a href="#cb16-42" aria-hidden="true" tabindex="-1"></a>  <span class="at">.getitem =</span> <span class="cf">function</span>(i) {</span>
+<span id="cb16-43"><a href="#cb16-43" aria-hidden="true" tabindex="-1"></a>    item <span class="ot">&lt;-</span> super<span class="sc">$</span><span class="fu">.getitem</span>(i)</span>
+<span id="cb16-44"><a href="#cb16-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-45"><a href="#cb16-45" aria-hidden="true" tabindex="-1"></a>    x <span class="ot">&lt;-</span> item<span class="sc">$</span>waveform</span>
+<span id="cb16-46"><a href="#cb16-46" aria-hidden="true" tabindex="-1"></a>    <span class="co"># make sure all samples have the same length (57)</span></span>
+<span id="cb16-47"><a href="#cb16-47" aria-hidden="true" tabindex="-1"></a>    <span class="co"># shorter ones will be padded,</span></span>
+<span id="cb16-48"><a href="#cb16-48" aria-hidden="true" tabindex="-1"></a>    <span class="co"># longer ones will be truncated</span></span>
+<span id="cb16-49"><a href="#cb16-49" aria-hidden="true" tabindex="-1"></a>    x <span class="ot">&lt;-</span> <span class="fu">nnf_pad</span>(x, <span class="at">pad =</span> <span class="fu">c</span>(<span class="dv">0</span>, self<span class="sc">$</span>pad_to <span class="sc">-</span> <span class="fu">dim</span>(x)[<span class="dv">2</span>]))</span>
+<span id="cb16-50"><a href="#cb16-50" aria-hidden="true" tabindex="-1"></a>    x <span class="ot">&lt;-</span> x <span class="sc">%&gt;%</span> self<span class="sc">$</span><span class="fu">spectrogram</span>()</span>
+<span id="cb16-51"><a href="#cb16-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-52"><a href="#cb16-52" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">is.null</span>(self<span class="sc">$</span>power)) {</span>
+<span id="cb16-53"><a href="#cb16-53" aria-hidden="true" tabindex="-1"></a>      <span class="co"># there is an additional dimension now,</span></span>
+<span id="cb16-54"><a href="#cb16-54" aria-hidden="true" tabindex="-1"></a>      <span class="co"># in position 4,</span></span>
+<span id="cb16-55"><a href="#cb16-55" aria-hidden="true" tabindex="-1"></a>      <span class="co"># that we want to appear in front</span></span>
+<span id="cb16-56"><a href="#cb16-56" aria-hidden="true" tabindex="-1"></a>      <span class="co"># (as a second channel)</span></span>
+<span id="cb16-57"><a href="#cb16-57" aria-hidden="true" tabindex="-1"></a>      x <span class="ot">&lt;-</span> x<span class="sc">$</span><span class="fu">squeeze</span>()<span class="sc">$</span><span class="fu">permute</span>(<span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">1</span>, <span class="dv">2</span>))</span>
+<span id="cb16-58"><a href="#cb16-58" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb16-59"><a href="#cb16-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-60"><a href="#cb16-60" aria-hidden="true" tabindex="-1"></a>    y <span class="ot">&lt;-</span> item<span class="sc">$</span>label_index</span>
+<span id="cb16-61"><a href="#cb16-61" aria-hidden="true" tabindex="-1"></a>    <span class="fu">list</span>(<span class="at">x =</span> x, <span class="at">y =</span> y)</span>
+<span id="cb16-62"><a href="#cb16-62" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb16-63"><a href="#cb16-63" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>As always, we immediately check if all is well:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>ds <span class="ot">&lt;-</span> <span class="fu">spectrogram_dataset</span>(</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">root =</span> <span class="st">"~/.torch-datasets"</span>,</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">url =</span> <span class="st">"speech_commands_v0.01"</span>,</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">download =</span> <span class="cn">TRUE</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(ds[<span class="dv">1</span>]<span class="sc">$</span>x)</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>ds[<span class="dv">1</span>]<span class="sc">$</span>y</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>[1]   1 257 101
+torch_tensor
+1
+[ CPULongType{} ]</code></pre>
+<p>Next, we split up the data, and instantiate the <code>dataset()</code> and <code>dataloader()</code> objects.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>train_ids <span class="ot">&lt;-</span> <span class="fu">sample</span>(</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(ds),</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">size =</span> <span class="fl">0.6</span> <span class="sc">*</span> <span class="fu">length</span>(ds)</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>valid_ids <span class="ot">&lt;-</span> <span class="fu">sample</span>(</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">setdiff</span>(</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>    <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(ds),</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>    train_ids</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">size =</span> <span class="fl">0.2</span> <span class="sc">*</span> <span class="fu">length</span>(ds)</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>test_ids <span class="ot">&lt;-</span> <span class="fu">setdiff</span>(</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>  <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(ds),</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">union</span>(train_ids, valid_ids)</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>batch_size <span class="ot">&lt;-</span> <span class="dv">128</span></span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>train_ds <span class="ot">&lt;-</span> <span class="fu">dataset_subset</span>(ds, <span class="at">indices =</span> train_ids)</span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>train_dl <span class="ot">&lt;-</span> <span class="fu">dataloader</span>(</span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>  train_ds,</span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">batch_size =</span> batch_size, <span class="at">shuffle =</span> <span class="cn">TRUE</span></span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>valid_ds <span class="ot">&lt;-</span> <span class="fu">dataset_subset</span>(ds, <span class="at">indices =</span> valid_ids)</span>
+<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a>valid_dl <span class="ot">&lt;-</span> <span class="fu">dataloader</span>(</span>
+<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a>  valid_ds,</span>
+<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">batch_size =</span> batch_size</span>
+<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a>test_ds <span class="ot">&lt;-</span> <span class="fu">dataset_subset</span>(ds, <span class="at">indices =</span> test_ids)</span>
+<span id="cb19-32"><a href="#cb19-32" aria-hidden="true" tabindex="-1"></a>test_dl <span class="ot">&lt;-</span> <span class="fu">dataloader</span>(test_ds, <span class="at">batch_size =</span> <span class="dv">64</span>)</span>
+<span id="cb19-33"><a href="#cb19-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-34"><a href="#cb19-34" aria-hidden="true" tabindex="-1"></a>b <span class="ot">&lt;-</span> train_dl <span class="sc">%&gt;%</span></span>
+<span id="cb19-35"><a href="#cb19-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dataloader_make_iter</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb19-36"><a href="#cb19-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dataloader_next</span>()</span>
+<span id="cb19-37"><a href="#cb19-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-38"><a href="#cb19-38" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(b<span class="sc">$</span>x)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>[1] 128   1 257 101</code></pre>
+<p>Like I said, the model is a straightforward convnet, with dropout and batch normalization.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nn_module</span>(</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">initialize =</span> <span class="cf">function</span>() {</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>features <span class="ot">&lt;-</span> <span class="fu">nn_sequential</span>(</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_conv2d</span>(<span class="dv">1</span>, <span class="dv">32</span>, <span class="at">kernel_size =</span> <span class="dv">3</span>),</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_batch_norm2d</span>(<span class="dv">32</span>),</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_relu</span>(),</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_max_pool2d</span>(<span class="at">kernel_size =</span> <span class="dv">2</span>),</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_dropout2d</span>(<span class="at">p =</span> <span class="fl">0.2</span>),</span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_conv2d</span>(<span class="dv">32</span>, <span class="dv">64</span>, <span class="at">kernel_size =</span> <span class="dv">3</span>),</span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_batch_norm2d</span>(<span class="dv">64</span>),</span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_relu</span>(),</span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_max_pool2d</span>(<span class="at">kernel_size =</span> <span class="dv">2</span>),</span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_dropout2d</span>(<span class="at">p =</span> <span class="fl">0.2</span>),</span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_conv2d</span>(<span class="dv">64</span>, <span class="dv">128</span>, <span class="at">kernel_size =</span> <span class="dv">3</span>),</span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_batch_norm2d</span>(<span class="dv">128</span>),</span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_relu</span>(),</span>
+<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_max_pool2d</span>(<span class="at">kernel_size =</span> <span class="dv">2</span>),</span>
+<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_dropout2d</span>(<span class="at">p =</span> <span class="fl">0.2</span>),</span>
+<span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_conv2d</span>(<span class="dv">128</span>, <span class="dv">256</span>, <span class="at">kernel_size =</span> <span class="dv">3</span>),</span>
+<span id="cb21-20"><a href="#cb21-20" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_batch_norm2d</span>(<span class="dv">256</span>),</span>
+<span id="cb21-21"><a href="#cb21-21" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_relu</span>(),</span>
+<span id="cb21-22"><a href="#cb21-22" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_max_pool2d</span>(<span class="at">kernel_size =</span> <span class="dv">2</span>),</span>
+<span id="cb21-23"><a href="#cb21-23" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_dropout2d</span>(<span class="at">p =</span> <span class="fl">0.2</span>),</span>
+<span id="cb21-24"><a href="#cb21-24" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_conv2d</span>(<span class="dv">256</span>, <span class="dv">512</span>, <span class="at">kernel_size =</span> <span class="dv">3</span>),</span>
+<span id="cb21-25"><a href="#cb21-25" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_batch_norm2d</span>(<span class="dv">512</span>),</span>
+<span id="cb21-26"><a href="#cb21-26" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_relu</span>(),</span>
+<span id="cb21-27"><a href="#cb21-27" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_adaptive_avg_pool2d</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>)),</span>
+<span id="cb21-28"><a href="#cb21-28" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_dropout2d</span>(<span class="at">p =</span> <span class="fl">0.2</span>)</span>
+<span id="cb21-29"><a href="#cb21-29" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb21-30"><a href="#cb21-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-31"><a href="#cb21-31" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>classifier <span class="ot">&lt;-</span> <span class="fu">nn_sequential</span>(</span>
+<span id="cb21-32"><a href="#cb21-32" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_linear</span>(<span class="dv">512</span>, <span class="dv">512</span>),</span>
+<span id="cb21-33"><a href="#cb21-33" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_batch_norm1d</span>(<span class="dv">512</span>),</span>
+<span id="cb21-34"><a href="#cb21-34" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_relu</span>(),</span>
+<span id="cb21-35"><a href="#cb21-35" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_dropout</span>(<span class="at">p =</span> <span class="fl">0.5</span>),</span>
+<span id="cb21-36"><a href="#cb21-36" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_linear</span>(<span class="dv">512</span>, <span class="dv">30</span>)</span>
+<span id="cb21-37"><a href="#cb21-37" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb21-38"><a href="#cb21-38" aria-hidden="true" tabindex="-1"></a>  },</span>
+<span id="cb21-39"><a href="#cb21-39" aria-hidden="true" tabindex="-1"></a>  <span class="at">forward =</span> <span class="cf">function</span>(x) {</span>
+<span id="cb21-40"><a href="#cb21-40" aria-hidden="true" tabindex="-1"></a>    x <span class="ot">&lt;-</span> self<span class="sc">$</span><span class="fu">features</span>(x)<span class="sc">$</span><span class="fu">squeeze</span>()</span>
+<span id="cb21-41"><a href="#cb21-41" aria-hidden="true" tabindex="-1"></a>    x <span class="ot">&lt;-</span> self<span class="sc">$</span><span class="fu">classifier</span>(x)</span>
+<span id="cb21-42"><a href="#cb21-42" aria-hidden="true" tabindex="-1"></a>    x</span>
+<span id="cb21-43"><a href="#cb21-43" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb21-44"><a href="#cb21-44" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>What is a good learning rate to train this model (<a href="#fig-audio-lr-finder-baseline">fig.&nbsp;<span>22.4</span></a>)?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> model <span class="sc">%&gt;%</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">setup</span>(</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">loss =</span> <span class="fu">nn_cross_entropy_loss</span>(),</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">optimizer =</span> optim_adam,</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">metrics =</span> <span class="fu">list</span>(<span class="fu">luz_metric_accuracy</span>())</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>rates_and_losses <span class="ot">&lt;-</span> model <span class="sc">%&gt;%</span></span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lr_finder</span>(train_dl)</span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>rates_and_losses <span class="sc">%&gt;%</span> <span class="fu">plot</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-audio-lr-finder-baseline" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/audio-lr-finder-baseline.png" class="img-fluid figure-img" alt="A noisy  curve that, from left to right, first declines very slowly (until shortly before x=0.01), then rises."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;22.4: Learning rate finder, run on the baseline model.</figcaption><p></p>
+</figure>
+</div>
+<p>Based on the plot, I decided to use 0.01 as a maximal learning rate.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>fitted <span class="ot">&lt;-</span> model <span class="sc">%&gt;%</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fit</span>(train_dl,</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">epochs =</span> <span class="dv">50</span>, <span class="at">valid_data =</span> valid_dl,</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">callbacks =</span> <span class="fu">list</span>(</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>      <span class="fu">luz_callback_early_stopping</span>(<span class="at">patience =</span> <span class="dv">3</span>),</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>      <span class="fu">luz_callback_lr_scheduler</span>(</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>        lr_one_cycle,</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>        <span class="at">max_lr =</span> <span class="fl">1e-2</span>,</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>        <span class="at">epochs =</span> <span class="dv">50</span>,</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">steps_per_epoch =</span> <span class="fu">length</span>(train_dl),</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">call_on =</span> <span class="st">"on_batch_end"</span></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>      ),</span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>      <span class="fu">luz_callback_model_checkpoint</span>(<span class="at">path =</span> <span class="st">"models_baseline/"</span>),</span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>      <span class="fu">luz_callback_csv_logger</span>(<span class="st">"logs_baseline.csv"</span>)</span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">verbose =</span> <span class="cn">TRUE</span></span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(fitted)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-audio-fit-baseline" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/audio-fit-baseline.png" class="img-fluid figure-img" alt="Top row: Curves displaying how classification accuracy develops over the training period, for both training and validation sets. Both first rise steeply, then slow down and flatten. Bottom row: Corresponding curves representing the loss. Both first descend quickly, then continue falling very slowly, then flatten."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;22.5: Fitting the baseline model.</figcaption><p></p>
+</figure>
+</div>
+<p>Model training stopped after thirty-two epochs (<a href="#fig-audio-fit-baseline">fig.&nbsp;<span>22.5</span></a>). Here is an excerpt from the logs:</p>
+<pre><code>"epoch","set","loss","acc"
+
+1,"train",3.34194613126368,0.0687577255871446
+1,"valid",3.08480389211692,0.137438195302843
+2,"train",2.87943273042542,0.161155747836836
+2,"valid",2.54789054393768,0.260275030902349
+3,"train",2.42715575726204,0.279048207663782
+3,"valid",2.08232365753136,0.417567985166873
+...
+...
+30,"train",0.397343056799929,0.880098887515451
+30,"valid",0.3777267414273,0.895395550061805
+31,"train",0.395276123743042,0.880073135558302
+31,"valid",0.375300966641482,0.895781829419036
+32,"train",0.387298851523524,0.880691182529872
+32,"valid",0.379925572989034,0.89323238566131</code></pre>
+<p>With thirty classes, an accuracy of about eighty-nine percent seems decent. We double-check on the test set:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">evaluate</span>(fitted, test_dl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>loss: 0.3776
+acc: 0.8898</code></pre>
+<p>An interesting question is which words get confused most often. (Of course, even more interesting is how error probabilities are related to features of the spectrograms – but this we have to leave to the <em>true</em> domain experts.)</p>
+<p>A nice way of displaying the confusion matrix is to create an alluvial plot (<a href="#fig-audio-alluvial-baseline">fig.&nbsp;<span>22.6</span></a>). We see the predictions, on the left, “flow into” the target slots. (Target-prediction pairs less frequent than a thousandth of test set cardinality are hidden.)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>preds_baseline <span class="ot">&lt;-</span> <span class="fu">predict</span>(fitted, test_dl)</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>preds_baseline <span class="ot">&lt;-</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">torch_argmax</span>(preds_baseline, <span class="at">dim =</span> <span class="dv">2</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.numeric</span>()</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>test_dl <span class="ot">&lt;-</span> <span class="fu">dataloader</span>(</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>  test_ds,</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">batch_size =</span> <span class="fu">length</span>(test_ds)</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>b <span class="ot">&lt;-</span> test_dl <span class="sc">%&gt;%</span></span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dataloader_make_iter</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dataloader_next</span>()</span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>targets_baseline <span class="ot">&lt;-</span> b<span class="sc">$</span>y<span class="sc">$</span><span class="fu">to</span>(<span class="at">device =</span> <span class="st">"cpu"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.numeric</span>()</span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a>df_baseline <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">preds =</span> preds_baseline,</span>
+<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">targets =</span> targets_baseline</span>
+<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-21"><a href="#cb27-21" aria-hidden="true" tabindex="-1"></a>classes <span class="ot">&lt;-</span> speechcommand_ds<span class="sc">$</span>classes</span>
+<span id="cb27-22"><a href="#cb27-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-23"><a href="#cb27-23" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> df_baseline <span class="sc">%&gt;%</span></span>
+<span id="cb27-24"><a href="#cb27-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">correct =</span> preds <span class="sc">==</span> targets) <span class="sc">%&gt;%</span></span>
+<span id="cb27-25"><a href="#cb27-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb27-26"><a href="#cb27-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">preds =</span> classes[preds],</span>
+<span id="cb27-27"><a href="#cb27-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">targets =</span> classes[targets]</span>
+<span id="cb27-28"><a href="#cb27-28" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb27-29"><a href="#cb27-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(preds, targets, correct)</span>
+<span id="cb27-30"><a href="#cb27-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-31"><a href="#cb27-31" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(alluvial)</span>
+<span id="cb27-32"><a href="#cb27-32" aria-hidden="true" tabindex="-1"></a><span class="fu">alluvial</span>(</span>
+<span id="cb27-33"><a href="#cb27-33" aria-hidden="true" tabindex="-1"></a>  df <span class="sc">%&gt;%</span> <span class="fu">select</span>(preds, targets),</span>
+<span id="cb27-34"><a href="#cb27-34" aria-hidden="true" tabindex="-1"></a>  <span class="at">freq =</span> df<span class="sc">$</span>n,</span>
+<span id="cb27-35"><a href="#cb27-35" aria-hidden="true" tabindex="-1"></a>  <span class="at">col =</span> <span class="fu">ifelse</span>(df<span class="sc">$</span>correct, <span class="st">"#d1d1d1"</span>, <span class="st">"#aaaaaa"</span>),</span>
+<span id="cb27-36"><a href="#cb27-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">border =</span> <span class="fu">ifelse</span>(df<span class="sc">$</span>correct, <span class="st">"#d1d1d1"</span>, <span class="st">"#aaaaaa"</span>),</span>
+<span id="cb27-37"><a href="#cb27-37" aria-hidden="true" tabindex="-1"></a>  <span class="at">hide =</span> df<span class="sc">$</span>n <span class="sc">&lt;</span> <span class="fu">nrow</span>(df_baseline) <span class="sc">/</span> <span class="dv">1000</span></span>
+<span id="cb27-38"><a href="#cb27-38" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-audio-alluvial-baseline" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/audio-alluvial-baseline.png" class="img-fluid figure-img" alt="On the left and the right sides, the thirty words that make up this dataset. In the middle, arrows showing which word a given one was mapped to in classification."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;22.6: Alluvial plot, illustrating which categories were confused most often.</figcaption><p></p>
+</figure>
+</div>
+<p>That’s it for the baseline approach. Let’s see if we can do still better.</p>
+</section>
+<section id="variation-one-use-a-mel-scale-spectrogram-instead" class="level3" data-number="22.4.2">
+<h3 data-number="22.4.2" class="anchored" data-anchor-id="variation-one-use-a-mel-scale-spectrogram-instead"><span class="header-section-number">22.4.2</span> Variation one: Use a Mel-scale spectrogram instead</h3>
+<p>In classical speech recognition, people did not necessarily limit pre-processing to the Fourier Transform and spectrograms. Various other steps used to – or could – follow, some of which seem obsolete once neural networks are being used. There is at least one technique, though, where it’s hard to devine a priori whether it will help or not.</p>
+<p>Due to the way our hearing system is built, we human beings don’t perceive differences equally accurately across the frequency range. For example, while the distances between 440 Hz and 480 Hz on the one hand, and 8000 Hz and 8040 Hz on the other, are the same mathematically, the latter will be much harder to perceive. (This is no different with other modes of perception – to tell the difference between one kilogram and two kilograms is easy, while doing the same for fourteen versus fifteen kilograms is less so.</p>
+<p>To accommodate this physiological precondition, one sometimes converts the Fourier coefficients to the so-called <em>Mel scale</em>. Various formulae exist that do this; in one or the other way, they always include taking the logarithm. But in practice, what usually is done is to create overlapping filters that aggregate sets of Fourier coefficients into a new representation, the Mel coefficients. In the low-frequency range, the filters are narrow, and subsume only very few Fourier coefficients. Then, they successively become wider, until, in the very-high frequency range, a wide range of Fourier coefficients get to contribute to a single Mel value.</p>
+<p>We can make this more concrete using a <code>torch</code> helper function, <code>functional_create_fb_matrix()</code> . What this function does is create a conversion matrix from Fourier- to Mel space:</p>
+<p>c</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>fb <span class="ot">&lt;-</span> <span class="fu">functional_create_fb_matrix</span>(</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_freqs =</span> <span class="dv">257</span>,</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">f_min =</span> <span class="dv">0</span>,</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">f_max =</span> <span class="dv">8000</span>,</span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_mels =</span> <span class="dv">16</span>,</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">sample_rate =</span> <span class="dv">16000</span></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(fb)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>[1] 257  16</code></pre>
+<p>In our application, we’ll use Mel spectrograms with one hundred twenty-eight coefficients; given that we’re training a convnet, we wouldn’t want to shrink spatial resolution too much. But visualization is more helpful when done with fewer filters – which is why, above, I’ve told <code>torch</code> to generate sixteen filters only. Here they are (<a href="#fig-audio-mel-filterbank">fig.&nbsp;<span>22.7</span></a>):</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">as_tibble</span>(<span class="fu">as.matrix</span>(fb)) <span class="sc">%&gt;%</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rowid_to_column</span>(<span class="st">"x"</span>)</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>df <span class="sc">%&gt;%</span></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="sc">!</span>x) <span class="sc">%&gt;%</span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(</span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> value, <span class="at">color =</span> name, <span class="at">group =</span> name)</span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"Fourier coefficient"</span>) <span class="sc">+</span></span>
+<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"Contribution to Mel coefficient"</span>) <span class="sc">+</span></span>
+<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"None"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-audio-mel-filterbank" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/audio-mel-filterbank.png" class="img-fluid figure-img" alt="A two-dimensional plot of Fourier coefficients and the Mel coefficients they contribute to. The higher the Mel coefficient, the more Fourier coefficients contribute to it."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;22.7: Mel filter bank with sixteen filters, as applied to 257 Fourier coefficients.</figcaption><p></p>
+</figure>
+</div>
+<p>From this plot, it should make sense how Mel-scale transformation is designed to compensate for lower perceptual resolution in higher-frequency ranges.</p>
+<p>Of course, in order to work with Mel spectrograms, you won’t need to generate filter banks yourself. For training, we’ll just replace <code>transform_spectrogram()</code> by <code>transform_mel_spectrogram()</code>. But sometimes, playing around with helper functions can significantly aid understanding. For example, using another low-levellish utility – <code>functional_mel_scale()</code> – we can take a set of Fourier coefficients, convert them to Mel scale, and compare.</p>
+<p>Here, I’m taking the spectrogram for sample 2000 - our “bird” – and pick a time window of interest. I then use <code>functional_mel_scale()</code> to obtain the respective Mel-scale representation, and plot (<a href="#fig-audio-mel-spectrogram">fig.&nbsp;<span>22.8</span></a>) the magnitudes of both sets of coefficients against each other (showing just the first half of the Fourier coefficients):</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>sample_spec <span class="ot">&lt;-</span> ds[<span class="dv">2000</span>]<span class="sc">$</span>x</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>win_31 <span class="ot">&lt;-</span> sample_spec[<span class="dv">1</span>, , <span class="dv">31</span>]</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>mel_31 <span class="ot">&lt;-</span> win_31<span class="sc">$</span><span class="fu">unsqueeze</span>(<span class="dv">2</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">functional_mel_scale</span>(<span class="at">n_mel =</span> <span class="dv">128</span>)</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">coefficient =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">128</span>,</span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">fourier =</span> <span class="fu">as.numeric</span>(win_31[<span class="dv">1</span><span class="sc">:</span><span class="dv">128</span>]),</span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">mel =</span> <span class="fu">as.numeric</span>(mel_31)</span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a>df <span class="sc">%&gt;%</span></span>
+<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(</span>
+<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a>    <span class="sc">!</span>coefficient,</span>
+<span id="cb31-16"><a href="#cb31-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">names_to =</span> <span class="st">"type"</span>, <span class="at">values_to =</span> <span class="st">"magnitude"</span></span>
+<span id="cb31-17"><a href="#cb31-17" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb31-18"><a href="#cb31-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(</span>
+<span id="cb31-19"><a href="#cb31-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">aes</span>(<span class="at">x =</span> coefficient, <span class="at">y =</span> magnitude, <span class="at">color =</span> type)</span>
+<span id="cb31-20"><a href="#cb31-20" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb31-21"><a href="#cb31-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb31-22"><a href="#cb31-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-audio-mel-spectrogram" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/audio-mel-spectrogram.png" class="img-fluid figure-img" alt="Compared to Fourier coefficient magnitudes, Mel coefficient magnitudes appear shifted to the right."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;22.8: Fourier and Mel coefficients, compared on one window of the “bird” spectrogram.</figcaption><p></p>
+</figure>
+</div>
+<p>Finally, before getting back to the task, let’s quickly verify that calling <code>functional_mel_scale()</code> is equivalent to constructing a filter bank manually and multiplying the resulting matrix with the Fourier coefficients. To do so, we now create a 257 x 128 matrix, and apply it to the spectrogram window we extracted above. The results should be equal (apart from small numerical errors):</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>fb <span class="ot">&lt;-</span> <span class="fu">functional_create_fb_matrix</span>(</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_freqs =</span> <span class="dv">257</span>,</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">f_min =</span> <span class="dv">0</span>,</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">f_max =</span> <span class="dv">8000</span>,</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_mels =</span> <span class="dv">128</span>,</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">sample_rate =</span> <span class="dv">16000</span></span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>(fb<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(win_31) <span class="sc">-</span> mel_31[<span class="dv">1</span>, , <span class="dv">1</span>]) <span class="sc">%&gt;%</span></span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">torch_max</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>torch_tensor
+5.96046e-08
+[ CPUFloatType{} ]</code></pre>
+<p>Now that we have an idea of how Mel-scale transformation works, and possibly a gut feeling as to whether this will help training or not: Let’s actually find out. Necessary modifications are minimal; only the argument list to <code>spectrogram_dataset()</code> is concerned:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>ds <span class="ot">&lt;-</span> <span class="fu">spectrogram_dataset</span>(</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">root =</span> <span class="st">"~/.torch-datasets"</span>,</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">url =</span> <span class="st">"speech_commands_v0.01"</span>,</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">download =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_mels =</span> <span class="dv">128</span></span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Model as well as training code stay the same. Learning rate finder output also looked rather similar (<a href="#fig-audio-lr-finder-mel">fig.&nbsp;<span>22.9</span></a>):</p>
+<div id="fig-audio-lr-finder-mel" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/audio-lr-finder-mel.png" class="img-fluid figure-img" alt="A noisy  curve that, from left to right, first declines very slowly (until shortly before x=0.01), then rises."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;22.9: Learning rate finder, run on the Mel-transform-enriched model.</figcaption><p></p>
+</figure>
+</div>
+<p>Using the same learning rate as previously, I saw training end after nineteen epochs (<a href="#fig-audio-fit-mel">fig.&nbsp;<span>22.10</span></a>).</p>
+<div id="fig-audio-fit-mel" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/audio-fit-mel.png" class="img-fluid figure-img" alt="Top row: Curves displaying how classification accuracy develops over the training period, for both training and validation sets. Both first rise steeply, then slow down and flatten. Bottom row: Corresponding curves representing the loss. Both first descend quickly, then continue falling very slowly, then flatten."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;22.10: Fitting the Mel-transform-enriched model.</figcaption><p></p>
+</figure>
+</div>
+<p>Final validation accuracy was at about 0.86, minimally lower than for the baseline model.</p>
+<pre><code>"epoch","set","loss","acc"
+1,"train",3.35417570164001,0.0639678615574784
+1,"valid",3.03987254348456,0.142228059332509
+2,"train",2.6629929004931,0.220874536464771
+2,"valid",2.20017999761245,0.367815203955501
+3,"train",2.03871287512623,0.400262669962917
+3,"valid",1.56310861835293,0.559100741656366
+...
+...
+17,"train",0.534631294167899,0.838715492377421
+17,"valid",0.524456901585355,0.854063658838072
+18,"train",0.526362751336659,0.840801400906469
+18,"valid",0.58039141460961,0.839076019777503
+19,"train",0.511069792840216,0.847059126493613
+19,"valid",0.511746386686961,0.858544499381953</code></pre>
+<p>So in this task, no improvement was seen through Mel transformation. But what matters is for us to be aware of this option, such that in other projects, we may give this technique a try.</p>
+<p>For completeness, here’s double-checking against the test set.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">evaluate</span>(fitted, test_dl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>loss: 0.5081
+acc: 0.8555</code></pre>
+<p>No surprise here, either. Interestingly though, this time the confusion matrix looks rather different, thus hinting at a change in inner workings (<a href="#fig-audio-alluvial-mel">fig.&nbsp;<span>22.11</span></a>). (To be sure, though, we’d have to run each version several times.)</p>
+<div id="fig-audio-alluvial-mel" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/audio-alluvial-mel.png" class="img-fluid figure-img" alt="On the left and the right sides, the thirty words that make up this dataset. In the middle, arrows showing which word a given one was mapped to in classification."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;22.11: Alluvial plot for the Mel-transform-enriched setup</figcaption><p></p>
+</figure>
+</div>
+<p>Leaving further exploration to the experts, we proceed to the final alternative.</p>
+</section>
+<section id="variation-two-complex-valued-spectograms" class="level3" data-number="22.4.3">
+<h3 data-number="22.4.3" class="anchored" data-anchor-id="variation-two-complex-valued-spectograms"><span class="header-section-number">22.4.3</span> Variation two: Complex-valued spectograms</h3>
+<p>When introducing spectrograms, I focused on their two-dimensional structure: The Fourier Transform is performed independently for a set of (overlapping) windows, leaving us with a grid where time slices and Fourier coefficients are arranged in rows and columns. This grid, we found, can be treated as an image of sorts. What I didn’t expand on were the actual values contained in that grid. Fourier coefficients are complex-valued, and thus, if left alone would need to be plotted in two-dimensional space – and then, the spectrogram, in turn, would have to be three-dimensional. In practice, for display (and other) purposes, one often works with the magnitudes of the coefficients instead, or the squares of those magnitudes.</p>
+<p>Maybe you’ve noticed that <code>transform_spectrogram()</code> takes an argument, <code>power</code>, which I haven’t commented on yet. This argument lets you specify whether you’d like squared magnitudes <code>(power = 2</code>, the default), absolute values (<code>power = 1</code>), any other positive value (such as <code>0.5</code>, the one we used when displaying a concrete example) – or both real and imaginary parts of the coefficients (<code>power = NULL</code>). So far, we’ve always gone with the default. But we might well wonder whether a neural network could profit from the additional information contained in the “whole” complex number. After all, when reducing to magnitudes we lose the phase shifts for the individual coefficients, which could well contain usable information. In any case, it’s worth a try!</p>
+<p>On the technical side, necessary modifications (again) are minimal. The call to <code>spectrogram_dataset()</code> now makes use of the <code>power</code> argument. Specifying <code>power = NULL</code>, we explicitly request both real and imaginary parts of the Fourier coefficients. The idea is to pass them to the model’s initial <code>nn_conv2d()</code> as two separate <em>channels</em>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>ds <span class="ot">&lt;-</span> <span class="fu">spectrogram_dataset</span>(</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">root =</span> <span class="st">"~/.torch-datasets"</span>,</span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">url =</span> <span class="st">"speech_commands_v0.01"</span>,</span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">download =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">power =</span> <span class="cn">NULL</span></span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(ds[<span class="dv">1</span>]<span class="sc">$</span>x)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>[1]   2 257 101</code></pre>
+<p>Correspondingly, the first convolutional module now is set up to work on two-channel inputs.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nn_module</span>(</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">initialize =</span> <span class="cf">function</span>() {</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>features <span class="ot">&lt;-</span> <span class="fu">nn_sequential</span>(</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_conv2d</span>(<span class="dv">2</span>, <span class="dv">32</span>, <span class="at">kernel_size =</span> <span class="dv">3</span>),</span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_batch_norm2d</span>(<span class="dv">32</span>),</span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_relu</span>(),</span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_max_pool2d</span>(<span class="at">kernel_size =</span> <span class="dv">2</span>),</span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_dropout2d</span>(<span class="at">p =</span> <span class="fl">0.2</span>),</span>
+<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_conv2d</span>(<span class="dv">32</span>, <span class="dv">64</span>, <span class="at">kernel_size =</span> <span class="dv">3</span>),</span>
+<span id="cb40-10"><a href="#cb40-10" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_batch_norm2d</span>(<span class="dv">64</span>),</span>
+<span id="cb40-11"><a href="#cb40-11" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_relu</span>(),</span>
+<span id="cb40-12"><a href="#cb40-12" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_max_pool2d</span>(<span class="at">kernel_size =</span> <span class="dv">2</span>),</span>
+<span id="cb40-13"><a href="#cb40-13" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_dropout2d</span>(<span class="at">p =</span> <span class="fl">0.2</span>),</span>
+<span id="cb40-14"><a href="#cb40-14" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_conv2d</span>(<span class="dv">64</span>, <span class="dv">128</span>, <span class="at">kernel_size =</span> <span class="dv">3</span>),</span>
+<span id="cb40-15"><a href="#cb40-15" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_batch_norm2d</span>(<span class="dv">128</span>),</span>
+<span id="cb40-16"><a href="#cb40-16" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_relu</span>(),</span>
+<span id="cb40-17"><a href="#cb40-17" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_max_pool2d</span>(<span class="at">kernel_size =</span> <span class="dv">2</span>),</span>
+<span id="cb40-18"><a href="#cb40-18" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_dropout2d</span>(<span class="at">p =</span> <span class="fl">0.2</span>),</span>
+<span id="cb40-19"><a href="#cb40-19" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_conv2d</span>(<span class="dv">128</span>, <span class="dv">256</span>, <span class="at">kernel_size =</span> <span class="dv">3</span>),</span>
+<span id="cb40-20"><a href="#cb40-20" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_batch_norm2d</span>(<span class="dv">256</span>),</span>
+<span id="cb40-21"><a href="#cb40-21" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_relu</span>(),</span>
+<span id="cb40-22"><a href="#cb40-22" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_max_pool2d</span>(<span class="at">kernel_size =</span> <span class="dv">2</span>),</span>
+<span id="cb40-23"><a href="#cb40-23" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_dropout2d</span>(<span class="at">p =</span> <span class="fl">0.2</span>),</span>
+<span id="cb40-24"><a href="#cb40-24" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_conv2d</span>(<span class="dv">256</span>, <span class="dv">512</span>, <span class="at">kernel_size =</span> <span class="dv">3</span>),</span>
+<span id="cb40-25"><a href="#cb40-25" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_batch_norm2d</span>(<span class="dv">512</span>),</span>
+<span id="cb40-26"><a href="#cb40-26" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_relu</span>(),</span>
+<span id="cb40-27"><a href="#cb40-27" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_adaptive_avg_pool2d</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>)),</span>
+<span id="cb40-28"><a href="#cb40-28" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_dropout2d</span>(<span class="at">p =</span> <span class="fl">0.2</span>)</span>
+<span id="cb40-29"><a href="#cb40-29" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb40-30"><a href="#cb40-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-31"><a href="#cb40-31" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>classifier <span class="ot">&lt;-</span> <span class="fu">nn_sequential</span>(</span>
+<span id="cb40-32"><a href="#cb40-32" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_linear</span>(<span class="dv">512</span>, <span class="dv">512</span>),</span>
+<span id="cb40-33"><a href="#cb40-33" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_batch_norm1d</span>(<span class="dv">512</span>),</span>
+<span id="cb40-34"><a href="#cb40-34" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_relu</span>(),</span>
+<span id="cb40-35"><a href="#cb40-35" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_dropout</span>(<span class="at">p =</span> <span class="fl">0.5</span>),</span>
+<span id="cb40-36"><a href="#cb40-36" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_linear</span>(<span class="dv">512</span>, <span class="dv">30</span>)</span>
+<span id="cb40-37"><a href="#cb40-37" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb40-38"><a href="#cb40-38" aria-hidden="true" tabindex="-1"></a>  },</span>
+<span id="cb40-39"><a href="#cb40-39" aria-hidden="true" tabindex="-1"></a>  <span class="at">forward =</span> <span class="cf">function</span>(x) {</span>
+<span id="cb40-40"><a href="#cb40-40" aria-hidden="true" tabindex="-1"></a>    x <span class="ot">&lt;-</span> self<span class="sc">$</span><span class="fu">features</span>(x)<span class="sc">$</span><span class="fu">squeeze</span>()</span>
+<span id="cb40-41"><a href="#cb40-41" aria-hidden="true" tabindex="-1"></a>    x <span class="ot">&lt;-</span> self<span class="sc">$</span><span class="fu">classifier</span>(x)</span>
+<span id="cb40-42"><a href="#cb40-42" aria-hidden="true" tabindex="-1"></a>    x</span>
+<span id="cb40-43"><a href="#cb40-43" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb40-44"><a href="#cb40-44" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Here is what I saw when running the learning rate finder (<a href="#fig-audio-lr-finder-complex">fig.&nbsp;<span>22.12</span></a>):</p>
+<div id="fig-audio-lr-finder-complex" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/audio-lr-finder-complex.png" class="img-fluid figure-img" alt="A noisy  curve that, from left to right, first declines very slowly (until shortly before x=0.01), then rises."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;22.12: Learning rate finder, run on the complex-spectrogram model.</figcaption><p></p>
+</figure>
+</div>
+<p>This time, training went on for forty epochs.</p>
+<div id="fig-audio-fit-complex" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/audio-fit-complex.png" class="img-fluid figure-img" alt="Top row: Curves displaying how classification accuracy develops over the training period, for both training and validation sets. Both first rise steeply, then slow down and flatten. Bottom row: Corresponding curves representing the loss. Both first descend quickly, then continue falling very slowly, then flatten."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;22.13: Fitting the complex-spectrogram model.</figcaption><p></p>
+</figure>
+</div>
+<p>Visually, the loss and accuracy curves for the validation set look smoother than in both other cases (<a href="#fig-audio-fit-complex">fig.&nbsp;<span>22.13</span></a>). Checking accuracies, we see:</p>
+<pre><code>"epoch","set","loss","acc"
+1,"train",3.09768574611813,0.12396992171405
+1,"valid",2.52993751740923,0.284378862793572
+2,"train",2.26747255972008,0.333642356819118
+2,"valid",1.66693911248562,0.540791100123609
+3,"train",1.62294889937818,0.518464153275649
+3,"valid",1.11740599192825,0.704882571075402
+...
+...
+38,"train",0.18717994078312,0.943809229501442
+38,"valid",0.23587799138006,0.936418417799753
+39,"train",0.19338578602993,0.942882159044087
+39,"valid",0.230597475945365,0.939431396786156
+40,"train",0.190593419024368,0.942727647301195
+40,"valid",0.243536252455384,0.936186650185414</code></pre>
+<p>With an accuracy of ~0.94, we now have a clear improvement.</p>
+<p>We can confirm this on the test set:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu">evaluate</span>(fitted, test_dl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>loss: 0.2373
+acc: 0.9324</code></pre>
+<p>Finally, the confusion matrix now looks like a cleaned-up version of the baseline run (<a href="#fig-audio-alluvial-complex">fig.&nbsp;<span>22.14</span></a>).</p>
+<div id="fig-audio-alluvial-complex" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/audio-alluvial-complex.png" class="img-fluid figure-img" alt="On the left and the right sides, the thirty words that make up this dataset. In the middle, arrows showing which word a given one was mapped to in classification. Clearly different from the ones before in that there are much fewer mis-classifications."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;22.14: Alluvial plot for the complex-spectrogram setup.</figcaption><p></p>
+</figure>
+</div>
+<p>We can safely say that taking into account phase information has significantly improved performance.</p>
+<p>With this, we’re ending our tour of deep learning applications. But as regards the magnificent Fourier Transform, we’ll be going into a lot more detail soon!</p>
+
+
+<div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
+<div id="ref-abs-1804-03209" class="csl-entry" role="listitem">
+Warden, Pete. 2018. <span>“Speech Commands: <span>A</span> Dataset for Limited-Vocabulary Speech Recognition.”</span> <em>CoRR</em> abs/1804.03209. <a href="http://arxiv.org/abs/1804.03209">http://arxiv.org/abs/1804.03209</a>.
+</div>
+</div>
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./time_series.html" class="pagination-link">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Time series</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./other_overview.html" class="pagination-link">
+        <span class="nav-page-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Overview</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+</body></html>

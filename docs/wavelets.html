@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-99.9.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Deep Learning and Scientific Computing with R torch - 28&nbsp; Wavelets</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./references.html" rel="next">
+<link href="./fourier_transform_fft.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./other_overview.html">Other things to do with torch: Matrices, Fourier Transform, and Wavelets</a></li><li class="breadcrumb-item"><a href="./wavelets.html"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Wavelets</span></a></li></ol></nav>
+      <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+      </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Deep Learning and Scientific Computing with R torch</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">Getting familiar with torch</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./basics_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Overview</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./what_is_torch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">On <code>torch</code>, and how to get it</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./tensors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Tensors</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Autograd</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optim_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Function minimization with <em>autograd</em></span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./network_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">A neural network from scratch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./modules.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Modules</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optimizers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Optimizers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./loss_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Loss functions</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optim_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Function minimization with L-BFGS</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./network_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Modularizing the neural network</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">Deep learning with torch</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./dl_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Overview</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Loading data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./training_with_luz.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Training with luz</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./image_classification_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">A first go at image classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./overfitting.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Making models generalize</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./training_efficiency.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Speeding up training</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./image_classification_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Image classification, take two: Improving performance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./image_segmentation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Image segmentation</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./tabular_data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Tabular data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Time series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./audio_classification.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Audio classification</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">Other things to do with torch: Matrices, Fourier Transform, and Wavelets</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./other_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Overview</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./matrix_computations_leastsquares.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Matrix computations: Least-squares problems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./matrix_computations_convolution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Matrix computations: Convolution</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./fourier_transform_dft.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Exploring the Discrete Fourier Transform (DFT)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./fourier_transform_fft.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">The Fast Fourier Transform (FFT)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wavelets.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Wavelets</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#introducing-the-morlet-wavelet" id="toc-introducing-the-morlet-wavelet" class="nav-link active" data-scroll-target="#introducing-the-morlet-wavelet"><span class="header-section-number">28.1</span> Introducing the Morlet wavelet</a></li>
+  <li><a href="#the-roles-of-k-and-omega_a" id="toc-the-roles-of-k-and-omega_a" class="nav-link" data-scroll-target="#the-roles-of-k-and-omega_a"><span class="header-section-number">28.2</span> The roles of <span class="math inline">\(K\)</span> and <span class="math inline">\(\omega_a\)</span></a></li>
+  <li><a href="#wavelet-transform-a-straightforward-implementation" id="toc-wavelet-transform-a-straightforward-implementation" class="nav-link" data-scroll-target="#wavelet-transform-a-straightforward-implementation"><span class="header-section-number">28.3</span> Wavelet Transform: A straightforward implementation</a></li>
+  <li><a href="#resolution-in-time-versus-in-frequency" id="toc-resolution-in-time-versus-in-frequency" class="nav-link" data-scroll-target="#resolution-in-time-versus-in-frequency"><span class="header-section-number">28.4</span> Resolution in time versus in frequency</a></li>
+  <li><a href="#how-is-this-different-from-a-spectrogram" id="toc-how-is-this-different-from-a-spectrogram" class="nav-link" data-scroll-target="#how-is-this-different-from-a-spectrogram"><span class="header-section-number">28.5</span> How is this different from a spectrogram?</a></li>
+  <li><a href="#performing-the-wavelet-transform-in-the-fourier-domain" id="toc-performing-the-wavelet-transform-in-the-fourier-domain" class="nav-link" data-scroll-target="#performing-the-wavelet-transform-in-the-fourier-domain"><span class="header-section-number">28.6</span> Performing the Wavelet Transform in the Fourier domain</a></li>
+  <li><a href="#creating-the-wavelet-diagram" id="toc-creating-the-wavelet-diagram" class="nav-link" data-scroll-target="#creating-the-wavelet-diagram"><span class="header-section-number">28.7</span> Creating the wavelet diagram</a></li>
+  <li><a href="#a-real-world-example-chaffinchs-song" id="toc-a-real-world-example-chaffinchs-song" class="nav-link" data-scroll-target="#a-real-world-example-chaffinchs-song"><span class="header-section-number">28.8</span> A real-world example: Chaffinch’s song</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span id="sec:wavelets" class="quarto-section-identifier"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Wavelets</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<p>We conclude the book with a practical application of <em>wavelet analysis</em> using <code>torch</code>.</p>
+<p>With the Fourier Transform, it was all about understanding the concepts, so we can use <code>torch_fft_ftt()</code> with confidence. This time, there is no ready-to-use function around; but we’ll see that computing the Wavelet Transform ourselves is not that hard. (And yes, <code>torch_fft_ftt()</code> will figure prominently, here, too.)</p>
+<p>What are wavelets? Like the Fourier basis, they’re functions; but they don’t extend infinitely. Instead, they are localized in time: Away from the center, they quickly decay to zero. In addition to a <em>location</em> parameter, they also have a <em>scale</em>: At different scales, they appear squished or stretched. Squished, they will do better at detecting high frequencies; the converse applies when they’re stretched out in time.</p>
+<p>The basic operation involved in the Wavelet Transform is convolution – have the (flipped) wavelet slide over the data, computing a sequence of dot products. This way, the wavelet is basically looking for <em>similarity</em>.</p>
+<p>As to the wavelet functions themselves, there are many of them. In a practical application, we’d want to experiment and pick the one that works best for the given data. Compared to the DFT and spectrograms, more experimentation tends to be involved in wavelet analysis.</p>
+<p>The topic of wavelets is very different from that of Fourier transforms in other respects, as well. Notably, there is a lot less standardization in terminology, use of symbols, and actual practices. For these reasons, I will refrain from giving a systematic, general introduction, the way I did in the DFT chapter. Instead, I’m going to heavily lean on one specific exposition, the one in Arnt Vistnes’ very nice book on waves <span class="citation" data-cites="waves">(<a href="references.html#ref-waves" role="doc-biblioref">Vistnes 2018</a>)</span>. In other words, both terminology and examples will reflect the choices made in that book.</p>
+<p>One choice Vistnes made was to favor depth over breadth, and to focus on a single wavelet.</p>
+<section id="introducing-the-morlet-wavelet" class="level2" data-number="28.1">
+<h2 data-number="28.1" class="anchored" data-anchor-id="introducing-the-morlet-wavelet"><span class="header-section-number">28.1</span> Introducing the Morlet wavelet</h2>
+<p>The Morlet, also known as Gabor<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>, wavelet is defined like so:</p>
+<p><span id="eq-wavelets-1"><span class="math display">\[
+\Psi_{\omega_{a},K,t_{k}}(t_n) = (e^{-i \omega_{a} (t_n - t_k)} - e^{-K^2}) \ e^{- \omega_a^2 (t_n - t_k )^2 /(2K )^2}
+\tag{28.1}\]</span></span></p>
+<p>This formulation pertains to discretized data, the kinds of data we work with in practice. Thus, <span class="math inline">\(t_k\)</span> and <span class="math inline">\(t_n\)</span> designate points in time, or equivalently, individual time-series samples.</p>
+<p>This equation looks daunting at first, but we can “tame” it a bit by analyzing its structure, and pointing to the main actors. For concreteness, though, we first look at an example wavelet.</p>
+<p>We start by implementing <a href="#eq-wavelets-1">Equation&nbsp;<span>28.1</span></a>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(torch)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(patchwork)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(zeallot)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>morlet <span class="ot">&lt;-</span> <span class="cf">function</span>(omega, K, t_k, t) {</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  (<span class="fu">torch_exp</span>(<span class="sc">-</span>1i <span class="sc">*</span> omega <span class="sc">*</span> (t <span class="sc">-</span> t_k)) <span class="sc">-</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">torch_exp</span>(<span class="sc">-</span><span class="fu">torch_square</span>(K))) <span class="sc">*</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">torch_exp</span>(<span class="sc">-</span><span class="fu">torch_square</span>(omega) <span class="sc">*</span> <span class="fu">torch_square</span>(t <span class="sc">-</span> t_k) <span class="sc">/</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>      <span class="fu">torch_square</span>(<span class="dv">2</span> <span class="sc">*</span> K))</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Comparing code and mathematical formulation, we notice a difference. The function itself takes one argument, <span class="math inline">\(t_n\)</span>; its realization, four (<code>omega</code>, <code>K</code>, <code>t_k</code>, and <code>t</code>). This is because the <code>torch</code> code is vectorized: On the one hand, <code>omega</code>, <code>K</code>, and <code>t_k</code>, which, in <a href="#eq-wavelets-1">Equation&nbsp;<span>28.1</span></a>, correspond to <span class="math inline">\(\omega_{a}\)</span>, <span class="math inline">\(K\)</span>, and <span class="math inline">\(t_k\)</span> , are scalars. (In the equation, they’re assumed to be fixed.) <code>t</code>, on the other hand, is a vector; it will hold the measurement times of the series to be analyzed.</p>
+<p>We pick example values for <code>omega</code>, <code>K</code>, and <code>t_k</code>, as well as a range of times to evaluate the wavelet on, and plot its values (<a href="#fig-wav-morlet-example">fig.&nbsp;<span>28.1</span></a>):</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>omega <span class="ot">&lt;-</span> <span class="dv">6</span> <span class="sc">*</span> pi</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>K <span class="ot">&lt;-</span> <span class="dv">6</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>t_k <span class="ot">&lt;-</span> <span class="dv">5</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>sample_time <span class="ot">&lt;-</span> <span class="fu">torch_arange</span>(<span class="dv">3</span>, <span class="dv">7</span>, <span class="fl">0.0001</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>create_wavelet_plot <span class="ot">&lt;-</span> <span class="cf">function</span>(omega, K, t_k, sample_time) {</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  morlet <span class="ot">&lt;-</span> <span class="fu">morlet</span>(omega, K, t_k, sample_time)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="fu">as.numeric</span>(sample_time),</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">real =</span> <span class="fu">as.numeric</span>(morlet<span class="sc">$</span>real),</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">imag =</span> <span class="fu">as.numeric</span>(morlet<span class="sc">$</span>imag)</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_longer</span>(<span class="sc">-</span>x, <span class="at">names_to =</span> <span class="st">"part"</span>, <span class="at">values_to =</span> <span class="st">"value"</span>)</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> value, <span class="at">color =</span> part)) <span class="sc">+</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_colour_grey</span>(<span class="at">start =</span> <span class="fl">0.8</span>, <span class="at">end =</span> <span class="fl">0.4</span>) <span class="sc">+</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">xlab</span>(<span class="st">"time"</span>) <span class="sc">+</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ylab</span>(<span class="st">"wavelet value"</span>) <span class="sc">+</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ggtitle</span>(<span class="st">"Morlet wavelet"</span>,</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>      <span class="at">subtitle =</span> <span class="fu">paste0</span>(<span class="st">"ω_a = "</span>, omega <span class="sc">/</span> pi, <span class="st">"π , K = "</span>, K)</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">+</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_minimal</span>()</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="fu">create_wavelet_plot</span>(omega, K, t_k, sample_time)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-wav-morlet-example" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/wav-morlet-example.png" class="quarto-discovered-preview-image img-fluid figure-img" alt="Two sine curves, shifted by pi/2, in a Gaussian envelope."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;28.1: A Morlet wavelet.</figcaption><p></p>
+</figure>
+</div>
+<p>What we see here is a complex sine curve – note the real and imaginary parts, separated by a phase shift of <span class="math inline">\(\pi/2\)</span> – that decays on both sides of the center. Looking back at <a href="#eq-wavelets-1">Equation&nbsp;<span>28.1</span></a>, we can identify the factors responsible for both features. The first term in the equation, <span class="math inline">\(e^{-i \omega_{a} (t_n - t_k)}\)</span>, generates the oscillation; the third, <span class="math inline">\(e^{- \omega_a^2 (t_n - t_k )^2 /(2K )^2}\)</span>, causes the exponential decay away from the center. (In case you’re wondering about the second term, <span class="math inline">\(e^{-K^2}\)</span>: For given <span class="math inline">\(K\)</span>, it is just a constant.)</p>
+<p>The third term actually is a Gaussian, with location parameter <span class="math inline">\(t_k\)</span> and scale <span class="math inline">\(K\)</span>. We’ll talk about <span class="math inline">\(K\)</span> in great detail soon, but what’s with <span class="math inline">\(t_k\)</span>? <span class="math inline">\(t_k\)</span> is the center of the wavelet; for the Morlet wavelet, this is also the location of maximum amplitude. As distance from the center increases, values quickly approach zero. This is what is meant by wavelets being localized: They are “active” only on a short range of time.</p>
+</section>
+<section id="the-roles-of-k-and-omega_a" class="level2" data-number="28.2">
+<h2 data-number="28.2" class="anchored" data-anchor-id="the-roles-of-k-and-omega_a"><span class="header-section-number">28.2</span> The roles of <span class="math inline">\(K\)</span> and <span class="math inline">\(\omega_a\)</span></h2>
+<p>Now, we already said that <span class="math inline">\(K\)</span> is the scale of the Gaussian; it thus determines how far the curve spreads out in time. But there is also <span class="math inline">\(\omega_a\)</span>. Looking back at the Gaussian term, it, too, will impact the spread.</p>
+<p>First though, what is <span class="math inline">\(\omega_a\)</span>? The subscript <span class="math inline">\(a\)</span> stands for “analysis”; thus, <span class="math inline">\(\omega_a\)</span> denotes a single frequency being probed. At this point, a quick aside on workflow – this will become much clearer later, when we actually run the Wavelet Transform):</p>
+<hr>
+<p>A single transform, resulting in spectrogram-like, three-dimensional output, operates on a set of analysis frequencies (<span class="math inline">\(\omega_a\)</span>), and covers the whole time range (<span class="math inline">\(t_n\)</span>).</p>
+<p>That covering is achieved by having the wavelet slide over the input, its position at each step being identified by its center, <span class="math inline">\(t_k\)</span>.</p>
+<p>What’s missing from this characterization is <span class="math inline">\(K\)</span>. That’s because you run a separate wavelet analysis for each <span class="math inline">\(K\)</span> of interest.</p>
+<hr>
+<p>Now, let’s first inspect visually the respective impacts of <span class="math inline">\(\omega_a\)</span> and <span class="math inline">\(K\)</span> (<a href="#fig-wav-K-omega">fig.&nbsp;<span>28.2</span></a>).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>p1 <span class="ot">&lt;-</span> <span class="fu">create_wavelet_plot</span>(<span class="dv">6</span> <span class="sc">*</span> pi, <span class="dv">4</span>, <span class="dv">5</span>, sample_time)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>p2 <span class="ot">&lt;-</span> <span class="fu">create_wavelet_plot</span>(<span class="dv">6</span> <span class="sc">*</span> pi, <span class="dv">6</span>, <span class="dv">5</span>, sample_time)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>p3 <span class="ot">&lt;-</span> <span class="fu">create_wavelet_plot</span>(<span class="dv">6</span> <span class="sc">*</span> pi, <span class="dv">8</span>, <span class="dv">5</span>, sample_time)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>p4 <span class="ot">&lt;-</span> <span class="fu">create_wavelet_plot</span>(<span class="dv">4</span> <span class="sc">*</span> pi, <span class="dv">6</span>, <span class="dv">5</span>, sample_time)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>p5 <span class="ot">&lt;-</span> <span class="fu">create_wavelet_plot</span>(<span class="dv">6</span> <span class="sc">*</span> pi, <span class="dv">6</span>, <span class="dv">5</span>, sample_time)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>p6 <span class="ot">&lt;-</span> <span class="fu">create_wavelet_plot</span>(<span class="dv">8</span> <span class="sc">*</span> pi, <span class="dv">6</span>, <span class="dv">5</span>, sample_time)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>(p1 <span class="sc">|</span> p4) <span class="sc">/</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  (p2 <span class="sc">|</span> p5) <span class="sc">/</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  (p3 <span class="sc">|</span> p6)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-wav-K-omega" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/wav-K-omega.png" class="img-fluid figure-img" alt="A 3x3 arrangement of sine waves, squished or spread out in time."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;28.2: Morlet wavelet: Effects of varying scale and analysis frequency.</figcaption><p></p>
+</figure>
+</div>
+<p>In the left column, we keep <span class="math inline">\(\omega_a\)</span> constant, and vary <span class="math inline">\(K\)</span>. On the right, <span class="math inline">\(\omega_a\)</span> changes, and <span class="math inline">\(K\)</span> stays the same.</p>
+<p>Firstly, we observe that the higher <span class="math inline">\(K\)</span>, the more the curve gets spread out. In a wavelet analysis, this means that more points in time will contribute to the transform’s output, resulting in high precision as to frequency content, but loss of resolution in time. (We’ll return to this – central – trade-off soon.)</p>
+<p>As to <span class="math inline">\(\omega_a\)</span>, its impact is twofold. On the one hand, in the Gaussian term, it counteracts – <em>exactly</em>, even – the scale parameter, <span class="math inline">\(K\)</span>. On the other, it determines the frequency, or equivalently, the period, of the wave. To see this, take a look at the right column. Corresponding to the different frequencies, we have, in the interval between 4 and 6, four, six, or eight peaks, respectively.</p>
+<p>This double role of <span class="math inline">\(\omega_a\)</span> is the reason why, all-in-all, it <em>does</em> make a difference whether we shrink <span class="math inline">\(K\)</span>, keeping <span class="math inline">\(\omega_a\)</span> constant, or increase <span class="math inline">\(\omega_a\)</span>, holding <span class="math inline">\(K\)</span> fixed.</p>
+<p>This state of things sounds complicated, but is less problematic than it might seem. In practice, understanding the role of <span class="math inline">\(K\)</span> is important, since we need to pick sensible <span class="math inline">\(K\)</span> values to try. As to the <span class="math inline">\(\omega_a\)</span>, on the other hand, there will be a multitude of them, corresponding to the range of frequencies we analyze.</p>
+<p>So we can understand the impact of <span class="math inline">\(K\)</span> in more detail, we need to take a first look at the Wavelet Transform.</p>
+</section>
+<section id="wavelet-transform-a-straightforward-implementation" class="level2" data-number="28.3">
+<h2 data-number="28.3" class="anchored" data-anchor-id="wavelet-transform-a-straightforward-implementation"><span class="header-section-number">28.3</span> Wavelet Transform: A straightforward implementation</h2>
+<p>While overall, the topic of wavelets is more multifaceted, and thus, may seem more enigmatic than Fourier analysis, the transform itself is easier to grasp. It is a sequence of local convolutions between wavelet and signal. Here is the formula for specific scale parameter <span class="math inline">\(K\)</span>, analysis frequency <span class="math inline">\(\omega_a\)</span>, and wavelet location <span class="math inline">\(t_k\)</span>:</p>
+<p><span class="math display">\[
+W_{K, \omega_a, t_k} = \sum_n  x_n \Psi_{\omega_{a},K,t_{k}}^*(t_n)
+\]</span></p>
+<p>This is just a dot product, computed between signal and complex-conjugated wavelet. (Here complex conjugation flips the wavelet in time, making this <em>convolution</em>, not correlation – a fact that matters a lot, as you’ll see soon.)</p>
+<p>Correspondingly, straightforward implementation results in a sequence of dot products, each corresponding to a different alignment of wavelet and signal. Below, in <code>wavelet_transform()</code>, arguments <code>omega</code> and <code>K</code> are scalars, while <code>x</code>, the signal, is a vector. The result is the wavelet-transformed signal, for some specific <code>K</code> and <code>omega</code> of interest.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>wavelet_transform <span class="ot">&lt;-</span> <span class="cf">function</span>(x, omega, K) {</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  n_samples <span class="ot">&lt;-</span> <span class="fu">dim</span>(x)[<span class="dv">1</span>]</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  W <span class="ot">&lt;-</span> <span class="fu">torch_complex</span>(</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">torch_zeros</span>(n_samples), <span class="fu">torch_zeros</span>(n_samples)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_samples) {</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="co"># move center of wavelet</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    t_k <span class="ot">&lt;-</span> x[i, <span class="dv">1</span>]</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    m <span class="ot">&lt;-</span> <span class="fu">morlet</span>(omega, K, t_k, x[, <span class="dv">1</span>])</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="co"># compute local dot product</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># note wavelet is conjugated</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    dot <span class="ot">&lt;-</span> <span class="fu">torch_matmul</span>(</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>      m<span class="sc">$</span><span class="fu">conj</span>()<span class="sc">$</span><span class="fu">unsqueeze</span>(<span class="dv">1</span>),</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>      x[, <span class="dv">2</span>]<span class="sc">$</span><span class="fu">to</span>(<span class="at">dtype =</span> <span class="fu">torch_cfloat</span>())</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    W[i] <span class="ot">&lt;-</span> dot</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>  W</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>To test this, we generate a simple sine wave that has a frequency of 100 Hertz in its first part, and double that in the second (<a href="#fig-wav-signal-short">fig.&nbsp;<span>28.3</span></a>).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>gencos <span class="ot">&lt;-</span> <span class="cf">function</span>(amp, freq, phase, fs, duration) {</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="fu">torch_arange</span>(<span class="dv">0</span>, duration, <span class="dv">1</span> <span class="sc">/</span> fs)[<span class="dv">1</span><span class="sc">:-</span><span class="dv">2</span>]<span class="sc">$</span><span class="fu">unsqueeze</span>(<span class="dv">2</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  y <span class="ot">&lt;-</span> amp <span class="sc">*</span> <span class="fu">torch_cos</span>(<span class="dv">2</span> <span class="sc">*</span> pi <span class="sc">*</span> freq <span class="sc">*</span> x <span class="sc">+</span> phase)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">torch_cat</span>(<span class="fu">list</span>(x, y), <span class="at">dim =</span> <span class="dv">2</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co"># sampling frequency</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>fs <span class="ot">&lt;-</span> <span class="dv">8000</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>f1 <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>f2 <span class="ot">&lt;-</span> <span class="dv">200</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>phase <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>duration <span class="ot">&lt;-</span> <span class="fl">0.25</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>s1 <span class="ot">&lt;-</span> <span class="fu">gencos</span>(<span class="dv">1</span>, f1, phase, fs, duration)</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>s2 <span class="ot">&lt;-</span> <span class="fu">gencos</span>(<span class="dv">1</span>, f2, phase, fs, duration)</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>s3 <span class="ot">&lt;-</span> <span class="fu">torch_cat</span>(<span class="fu">list</span>(s1, s2), <span class="at">dim =</span> <span class="dv">1</span>)</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>s3[(<span class="fu">dim</span>(s1)[<span class="dv">1</span>] <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span>(<span class="fu">dim</span>(s1)[<span class="dv">1</span>] <span class="sc">*</span> <span class="dv">2</span>), <span class="dv">1</span>] <span class="ot">&lt;-</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>  s3[(<span class="fu">dim</span>(s1)[<span class="dv">1</span>] <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span>(<span class="fu">dim</span>(s1)[<span class="dv">1</span>] <span class="sc">*</span> <span class="dv">2</span>), <span class="dv">1</span>] <span class="sc">+</span> duration</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> <span class="fu">as.numeric</span>(s3[, <span class="dv">1</span>]),</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> <span class="fu">as.numeric</span>(s3[, <span class="dv">2</span>])</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> y)) <span class="sc">+</span></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"time"</span>) <span class="sc">+</span></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"amplitude"</span>) <span class="sc">+</span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-wav-signal-short" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/wav-signal-short.png" class="img-fluid figure-img" alt="A sine wave that oscillates a lot faster in its second part."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;28.3: An example signal, consisting of a low-frequency and a high-frequency half.</figcaption><p></p>
+</figure>
+</div>
+<p>Now, we run the Wavelet Transform on this signal, for an analysis frequency of 100 Hertz, and with a <code>K</code> parameter of 2, found through quick experimentation (<a href="#fig-wav-signal-short-transform">fig.&nbsp;<span>28.4</span></a>):</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>K <span class="ot">&lt;-</span> <span class="dv">2</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>omega <span class="ot">&lt;-</span> <span class="dv">2</span> <span class="sc">*</span> pi <span class="sc">*</span> f1</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">wavelet_transform</span>(<span class="at">x =</span> s3, omega, K)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> <span class="fu">as.numeric</span>(s3[, <span class="dv">1</span>]),</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> <span class="fu">as.numeric</span>(res<span class="sc">$</span><span class="fu">abs</span>())</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> y)) <span class="sc">+</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"time"</span>) <span class="sc">+</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"Wavelet Transform"</span>) <span class="sc">+</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-wav-signal-short-transform" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/wav-signal-short-transform.png" class="img-fluid figure-img" alt="A square wave that starts high, then drops to zero."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;28.4: Wavelet Transform of the above two-part signal. Analysis frequency is 100 Hertz.</figcaption><p></p>
+</figure>
+</div>
+<p>The transform correctly picks out the part of the signal that matches the analysis frequency. If you feel like, you might want to double-check what happens for an analysis frequency of 200 Hertz.</p>
+<p>Now, in reality we will want to run this analysis not for a single frequency, but a range of frequencies we’re interested in. And we will want to try different scales <code>K</code>. Now, if you executed the code above, you might be worried that this could take a <em>lot</em> of time.</p>
+<p>Well, it by necessity takes longer to compute than its Fourier analogue, the spectrogram. For one, that’s because with spectrograms, the analysis is “just” two-dimensional, the axes being time and frequency. With wavelets there are, in addition, different scales to be explored. And secondly, spectrograms operate on whole windows (with configurable overlap); a wavelet, on the other hand, slides over the signal in unit steps.</p>
+<p>Still, the situation is not as grave as it sounds. The Wavelet Transform being a <em>convolution</em>, we can implement it in the Fourier domain instead. We’ll do that very soon, but first, as promised, let’s revisit the topic of varying <code>K</code>.</p>
+</section>
+<section id="resolution-in-time-versus-in-frequency" class="level2" data-number="28.4">
+<h2 data-number="28.4" class="anchored" data-anchor-id="resolution-in-time-versus-in-frequency"><span class="header-section-number">28.4</span> Resolution in time versus in frequency</h2>
+<p>We already saw that the higher <code>K</code>, the more spread-out the wavelet. We can use our first, maximally straightforward, example, to investigate one immediate consequence. What, for example, happens for <code>K</code> set to twenty (<a href="#fig-wav-signal-short-transform-largeK">fig.&nbsp;<span>28.5</span></a>)?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>K <span class="ot">&lt;-</span> <span class="dv">20</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">wavelet_transform</span>(<span class="at">x =</span> s3, omega, K)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> <span class="fu">as.numeric</span>(s3[, <span class="dv">1</span>]),</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> <span class="fu">as.numeric</span>(res<span class="sc">$</span><span class="fu">abs</span>())</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> y)) <span class="sc">+</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"time"</span>) <span class="sc">+</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"Wavelet Transform"</span>) <span class="sc">+</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-wav-signal-short-transform-largeK" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/wav-signal-short-transform-largeK.png" class="img-fluid figure-img" alt="A sine wave that peaks in the first half of samples, and is mostly zero in the second."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;28.5: Wavelet Transform of the above two-part signal, with <code>K</code> set to twenty instead of two.</figcaption><p></p>
+</figure>
+</div>
+<p>The Wavelet Transform still picks out the correct region of the signal – but now, instead of a rectangle-like result, we get a significantly smoothed version that does not sharply separate the two regions.</p>
+<p>Notably, the first 0.05 seconds, too, show considerable smoothing. The larger a wavelet, the more element-wise products will be lost at the end and the beginning. This is because transforms are computed aligning the wavelet at all signal positions, from the very first to the last. Concretely, when we compute the dot product at location <code>t_k = 1</code>, just a single sample of the signal is considered.</p>
+<p>Apart from possibly introducing unreliability at the boundaries, how does wavelet scale affect the analysis? Well, since we’re <em>correlating</em> (<em>convolving</em>, technically; but in this case, the effect, in the end, is the same) the wavelet with the signal, point-wise similarity is what matters. Concretely, assume the signal is a pure sine wave, the wavelet we’re using is a windowed sinusoid like the Morlet, and that we’ve found an optimal <code>K</code> that nicely captures the signal’s frequency. Then any other <code>K</code>, be it larger or smaller, will result in less point-wise overlap.</p>
+<p>This leads to a question we can’t get around.</p>
+</section>
+<section id="how-is-this-different-from-a-spectrogram" class="level2" data-number="28.5">
+<h2 data-number="28.5" class="anchored" data-anchor-id="how-is-this-different-from-a-spectrogram"><span class="header-section-number">28.5</span> How is this different from a spectrogram?</h2>
+<p>Chances are you have been mentally comparing what we’re doing here not with the Fourier Transform per se, but with its windowed progeny, the spectrogram. Both methods tell us how frequency composition varies over time. Both involve trade-offs between resolution in frequency and in time. How, then, are they different?</p>
+<p>Let’s start with the way spectrograms are normally computed. Usually, the choice of window size is the same for all frequency ranges. Then, resolution of high frequencies will be better than that of lower ones, since more periods fit into one analysis window.</p>
+<p>To counteract this, it would be possible to choose different window sizes for different ranges of frequencies. But then, how do you make those choices? It is a lot more convenient to, in wavelet analysis, experiment with different <code>K</code>, all the more since with growing experience, those explorations will resemble to trial-and-error endeavors less and less.</p>
+</section>
+<section id="performing-the-wavelet-transform-in-the-fourier-domain" class="level2" data-number="28.6">
+<h2 data-number="28.6" class="anchored" data-anchor-id="performing-the-wavelet-transform-in-the-fourier-domain"><span class="header-section-number">28.6</span> Performing the Wavelet Transform in the Fourier domain</h2>
+<p>Soon, we will run the Wavelet Transform on a longer signal. Thus, it is time to speed up computation. We already said that here, we benefit from time-domain convolution being equivalent to multiplication in the Fourier domain. The overall process then is this: First, compute the DFT of both signal and wavelet; second, multiply the results; third, inverse-transform back to the time domain.</p>
+<p>With the Morlet wavelet, we don’t even have to run the FFT: Its Fourier-domain representation can be stated in closed form. We’ll just make use of that formulation from the outset.</p>
+<p>To see how this works, we first manually step through the process. In the following section, we’ll package things up for quick execution.</p>
+<p>Here, first, is the signal. It again is composed of two different frequencies, 100 Hertz and 200 Hertz. But this time, we repeat the alternation several times, and map those frequencies to different amplitudes. The latter may seem like an innocent change, but there is an important consequence: We have to adapt our cosine-generating code to keep track of the phase. If we don’t do this, the signal will be distorted at the transition points.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>gencosines <span class="ot">&lt;-</span> <span class="cf">function</span>(freqs, amps, samples_per_frame, fs) {</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  t <span class="ot">&lt;-</span> (<span class="dv">1</span><span class="sc">:</span>samples_per_frame) <span class="sc">/</span> fs</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  lastphase <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="fu">torch_zeros</span>(<span class="fu">length</span>(freqs), samples_per_frame)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(freqs)) {</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    amp <span class="ot">&lt;-</span> <span class="fu">torch_ones</span>(samples_per_frame) <span class="sc">*</span> amps[i]</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    freq <span class="ot">&lt;-</span> <span class="fu">torch_ones</span>(samples_per_frame) <span class="sc">*</span> freqs[i]</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    phase <span class="ot">&lt;-</span> <span class="fu">torch_tensor</span>(<span class="dv">2</span> <span class="sc">*</span> pi <span class="sc">*</span> freq <span class="sc">*</span> t <span class="sc">+</span> lastphase)</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    x_frame <span class="ot">&lt;-</span> amp <span class="sc">*</span> <span class="fu">torch_cos</span>(phase)</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    <span class="co"># save phase to be used in next frame</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    lastphase <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(phase[samples_per_frame]) <span class="sc">%%</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>      (<span class="dv">2</span> <span class="sc">*</span> pi)</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>    x[i, ] <span class="ot">&lt;-</span> x_frame</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>  x<span class="sc">$</span><span class="fu">reshape</span>(<span class="fu">length</span>(freqs) <span class="sc">*</span> samples_per_frame)</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Here is the signal (<a href="#fig-wav-signal-long">fig.&nbsp;<span>28.6</span></a>):</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>freqs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">100</span>, <span class="dv">200</span>, <span class="dv">100</span>, <span class="dv">200</span>, <span class="dv">100</span>, <span class="dv">200</span>, <span class="dv">100</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>amps <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">1.2</span>, <span class="fl">0.8</span>, <span class="fl">1.2</span>, <span class="fl">0.8</span>, <span class="fl">1.2</span>, <span class="fl">0.8</span>, <span class="fl">1.2</span>)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>samples_per_frame <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>fs <span class="ot">&lt;-</span> <span class="dv">800</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">gencosines</span>(freqs, amps, samples_per_frame, fs)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">x =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">dim</span>(x)[<span class="dv">1</span>], <span class="at">y =</span> <span class="fu">as.numeric</span>(x))</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> y)) <span class="sc">+</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"sample"</span>) <span class="sc">+</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"amplitude"</span>) <span class="sc">+</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-wav-signal-long" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/wav-signal-long.png" class="img-fluid figure-img" alt="A sine wave that alternates between different frequencies and amplitudes."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;28.6: A signal, consisting of alternating, different-amplitude low-frequency and high-frequency halves.</figcaption><p></p>
+</figure>
+</div>
+<p>The DFT of the signal is quickly computed:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>F <span class="ot">&lt;-</span> <span class="fu">torch_fft_fft</span>(x)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The Fourier-domain representation of the wavelet, on the other hand, is given by:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>morlet_fourier <span class="ot">&lt;-</span> <span class="cf">function</span>(K, omega_a, omega) {</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="dv">2</span> <span class="sc">*</span> (<span class="fu">torch_exp</span>(<span class="sc">-</span><span class="fu">torch_square</span>(</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    K <span class="sc">*</span> (omega <span class="sc">-</span> omega_a) <span class="sc">/</span> omega_a</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  )) <span class="sc">-</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">torch_exp</span>(<span class="sc">-</span><span class="fu">torch_square</span>(K)) <span class="sc">*</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>      <span class="fu">torch_exp</span>(<span class="sc">-</span><span class="fu">torch_square</span>(K <span class="sc">*</span> omega <span class="sc">/</span> omega_a)))</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Comparing this statement of the wavelet to the time-domain one, we see that – as expected – instead of parameters <code>t</code> and <code>t_k</code> it now takes <code>omega</code> and <code>omega_a</code>. The latter, <code>omega_a</code>, is the analysis frequency, the one we’re probing for, a scalar; the former, <code>omega</code>, the range of frequencies that appear in the DFT of the signal.</p>
+<p>In instantiating the wavelet, there is one thing we need to pay special attention to. In FFT-think, the frequencies are bins; their number is determined by the length of the signal (a length that, for its part, directly depends on sampling frequency). Our wavelet, on the other hand, works with frequencies in Hertz (nicely, from a user’s perspective; since this unit is meaningful to us). What this means is that to <code>morlet_fourier</code>, as <code>omega_a</code> we need to pass not the value in Hertz, but the corresponding FFT bin. Conversion is done relating the number of bins, <code>dim(x)[1]</code>, to the sampling frequency of the signal, <code>fs</code>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># again look for 100Hz parts</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>omega <span class="ot">&lt;-</span> <span class="dv">2</span> <span class="sc">*</span> pi <span class="sc">*</span> f1</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co"># need the bin corresponding to some frequency in Hz</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>omega_bin <span class="ot">&lt;-</span> f1<span class="sc">/</span>fs <span class="sc">*</span> <span class="fu">dim</span>(x)[<span class="dv">1</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We instantiate the wavelet, perform the Fourier-domain multiplication, and inverse-transform the result:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>K <span class="ot">&lt;-</span> <span class="dv">3</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>m <span class="ot">&lt;-</span> <span class="fu">morlet_fourier</span>(K, omega_bin, <span class="dv">1</span><span class="sc">:</span><span class="fu">dim</span>(x)[<span class="dv">1</span>])</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>prod <span class="ot">&lt;-</span> F <span class="sc">*</span> m</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>transformed <span class="ot">&lt;-</span> <span class="fu">torch_fft_ifft</span>(prod)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>And this is the result (<a href="#fig-wav-example-long-transform">fig.&nbsp;<span>28.7</span></a>):</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> <span class="fu">as.numeric</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">dim</span>(x)[<span class="dv">1</span>]) <span class="sc">/</span> fs,</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> <span class="fu">as.numeric</span>(transformed<span class="sc">$</span><span class="fu">abs</span>())</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> y)) <span class="sc">+</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"time"</span>) <span class="sc">+</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"Wavelet Transform"</span>) <span class="sc">+</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-wav-example-long-transform" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/wav-example-long-transform.png" class="img-fluid figure-img" alt="An alternating square wave."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;28.7: Wavelet Transform of the above alternating-frequency signal. Analysis frequency is 100 Hertz.</figcaption><p></p>
+</figure>
+</div>
+<p>All 100-Hertz-regions are identified flawlessly. Also, looking at the y-axis, we see that the amplitude is correct.</p>
+<p>Putting together wavelet instantiation and the steps involved in the analysis, we have the following. (Note how to <code>wavelet_transform_fourier</code>, we now, conveniently, pass in the frequency value in Hertz.)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>wavelet_transform_fourier <span class="ot">&lt;-</span> <span class="cf">function</span>(x, omega_a, K, fs) {</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  N <span class="ot">&lt;-</span> <span class="fu">dim</span>(x)[<span class="dv">1</span>]</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  omega_bin <span class="ot">&lt;-</span> omega_a <span class="sc">/</span> fs <span class="sc">*</span> N</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  m <span class="ot">&lt;-</span> <span class="fu">morlet_fourier</span>(K, omega_bin, <span class="dv">1</span><span class="sc">:</span>N)</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  x_fft <span class="ot">&lt;-</span> <span class="fu">torch_fft_fft</span>(x)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  prod <span class="ot">&lt;-</span> x_fft <span class="sc">*</span> m</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  w <span class="ot">&lt;-</span> <span class="fu">torch_fft_ifft</span>(prod)</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>  w</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Let’s use this to probe for the second frequency used, 200 Hertz (<a href="#fig-wav-example-long-transform2">fig.&nbsp;<span>28.8</span></a>).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>K <span class="ot">&lt;-</span> <span class="dv">6</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>transformed <span class="ot">&lt;-</span> <span class="fu">wavelet_transform_fourier</span>(x, f2, K, fs)</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">dim</span>(x)[<span class="dv">1</span>] <span class="sc">/</span> fs,</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> <span class="fu">as.numeric</span>(transformed<span class="sc">$</span><span class="fu">abs</span>())</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> y)) <span class="sc">+</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"time"</span>) <span class="sc">+</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"Wavelet Transform"</span>) <span class="sc">+</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-wav-example-long-transform2" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/wav-example-long-transform2.png" class="img-fluid figure-img" alt="An alternating square wave."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;28.8: Wavelet Transform of the above alternating-frequency signal. Analysis frequency is 200 Hertz.</figcaption><p></p>
+</figure>
+</div>
+<p>Again, we find that matching regions, as well as the amplitude, are correctly identified.</p>
+<p>We’ve already made significant progress. We’re ready for the final step: automating analysis over a range of frequencies of interest. This will result in a three-dimensional representation, the wavelet diagram.</p>
+</section>
+<section id="creating-the-wavelet-diagram" class="level2" data-number="28.7">
+<h2 data-number="28.7" class="anchored" data-anchor-id="creating-the-wavelet-diagram"><span class="header-section-number">28.7</span> Creating the wavelet diagram</h2>
+<p>In the Fourier Transform, the number of coefficients we obtain depends on signal length, and effectively reduces to half the sampling frequency. With its wavelet analogue, since anyway we’re doing a loop over frequencies, we might as well decide which frequencies to analyze.</p>
+<p>Firstly, the range of frequencies of interest can be determined running the DFT. The next question, then, is about granularity. Here, I’ll be following the recommendation given in Vistnes’ book, which is based on the relation between current frequency value and wavelet scale, <code>K</code>.</p>
+<p>Iteration over frequencies is then implemented as a loop:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>wavelet_grid <span class="ot">&lt;-</span> <span class="cf">function</span>(x, K, f_start, f_end, fs) {</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># downsample analysis frequency range</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># as per Vistnes, eq. 14.17</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  num_freqs <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fu">log</span>(f_end <span class="sc">/</span> f_start)<span class="sc">/</span> <span class="fu">log</span>(<span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span><span class="sc">/</span>(<span class="dv">8</span> <span class="sc">*</span> K))</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  freqs <span class="ot">&lt;-</span> <span class="fu">seq</span>(f_start, f_end, <span class="at">length.out =</span> <span class="fu">floor</span>(num_freqs))</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>  transformed <span class="ot">&lt;-</span> <span class="fu">torch_zeros</span>(</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    num_freqs, <span class="fu">dim</span>(x)[<span class="dv">1</span>],</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">dtype =</span> <span class="fu">torch_cfloat</span>()</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>num_freqs) {</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>    w <span class="ot">&lt;-</span> <span class="fu">wavelet_transform_fourier</span>(x, freqs[i], K, fs)</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>    transformed[i, ] <span class="ot">&lt;-</span> w</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(transformed, freqs)</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Calling <code>wavelet_grid()</code> will give us the analysis frequencies used, together with the respective outputs from the Wavelet Transform.</p>
+<p>Next, we create a utility function that visualizes the result. By default, <code>plot_wavelet_diagram()</code> displays the magnitude of the wavelet-transformed series; it can, however, plot the squared magnitudes, too, as well as their square root, a method much recommended by Vistnes whose effectiveness we will soon have opportunity to witness.</p>
+<p>The function deserves a few further comments.</p>
+<p>Firstly, same as we did with the analysis frequencies, we down-sample the signal itself, avoiding to suggest a resolution that is not actually present. The formula, again, is taken from Vistnes’ book.</p>
+<p>Then, we use interpolation to obtain a new time-frequency grid. This step may even be necessary if we keep the original grid, since when distances between grid points are very small, R’s <code>image()</code> may refuse to accept axes as evenly spaced.</p>
+<p>Finally, note how frequencies are arranged on a log scale. This leads to much more useful visualizations.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>plot_wavelet_diagram <span class="ot">&lt;-</span> <span class="cf">function</span>(x,</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>                                 freqs,</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>                                 grid,</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>                                 K,</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>                                 fs,</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>                                 f_end,</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">type =</span> <span class="st">"magnitude"</span>) {</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>  grid <span class="ot">&lt;-</span> <span class="cf">switch</span>(type,</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">magnitude =</span> grid<span class="sc">$</span><span class="fu">abs</span>(),</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">magnitude_squared =</span> <span class="fu">torch_square</span>(grid<span class="sc">$</span><span class="fu">abs</span>()),</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">magnitude_sqrt =</span> <span class="fu">torch_sqrt</span>(grid<span class="sc">$</span><span class="fu">abs</span>())</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>  <span class="co"># downsample time series</span></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>  <span class="co"># as per Vistnes, eq. 14.9</span></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>  new_x_take_every <span class="ot">&lt;-</span> <span class="fu">max</span>(K <span class="sc">/</span> <span class="dv">24</span> <span class="sc">*</span> fs <span class="sc">/</span> f_end, <span class="dv">1</span>)</span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>  new_x_length <span class="ot">&lt;-</span> <span class="fu">floor</span>(<span class="fu">dim</span>(grid)[<span class="dv">2</span>] <span class="sc">/</span> new_x_take_every)</span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>  new_x <span class="ot">&lt;-</span> <span class="fu">torch_arange</span>(</span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>    x[<span class="dv">1</span>],</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>    x[<span class="fu">dim</span>(x)[<span class="dv">1</span>]],</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">step =</span> x[<span class="fu">dim</span>(x)[<span class="dv">1</span>]] <span class="sc">/</span> new_x_length</span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>  <span class="co"># interpolate grid</span></span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>  new_grid <span class="ot">&lt;-</span> <span class="fu">nnf_interpolate</span>(</span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>    grid<span class="sc">$</span><span class="fu">view</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="fu">dim</span>(grid)[<span class="dv">1</span>], <span class="fu">dim</span>(grid)[<span class="dv">2</span>])),</span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(<span class="fu">dim</span>(grid)[<span class="dv">1</span>], new_x_length)</span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a>  )<span class="sc">$</span><span class="fu">squeeze</span>()</span>
+<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(new_grid)</span>
+<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a>  <span class="co"># plot log frequencies</span></span>
+<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a>  freqs <span class="ot">&lt;-</span> <span class="fu">log10</span>(freqs)</span>
+<span id="cb18-33"><a href="#cb18-33" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb18-34"><a href="#cb18-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">image</span>(</span>
+<span id="cb18-35"><a href="#cb18-35" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="fu">as.numeric</span>(new_x),</span>
+<span id="cb18-36"><a href="#cb18-36" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> freqs,</span>
+<span id="cb18-37"><a href="#cb18-37" aria-hidden="true" tabindex="-1"></a>    <span class="at">z =</span> <span class="fu">t</span>(out),</span>
+<span id="cb18-38"><a href="#cb18-38" aria-hidden="true" tabindex="-1"></a>    <span class="at">ylab =</span> <span class="st">"log frequency [Hz]"</span>,</span>
+<span id="cb18-39"><a href="#cb18-39" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab =</span> <span class="st">"time [s]"</span>,</span>
+<span id="cb18-40"><a href="#cb18-40" aria-hidden="true" tabindex="-1"></a>    <span class="at">col =</span> <span class="fu">hcl.colors</span>(<span class="dv">12</span>, <span class="at">palette =</span> <span class="st">"Light grays"</span>)</span>
+<span id="cb18-41"><a href="#cb18-41" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb18-42"><a href="#cb18-42" aria-hidden="true" tabindex="-1"></a>  main <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"Wavelet Transform, K = "</span>, K)</span>
+<span id="cb18-43"><a href="#cb18-43" aria-hidden="true" tabindex="-1"></a>  sub <span class="ot">&lt;-</span> <span class="cf">switch</span>(type,</span>
+<span id="cb18-44"><a href="#cb18-44" aria-hidden="true" tabindex="-1"></a>    <span class="at">magnitude =</span> <span class="st">"Magnitude"</span>,</span>
+<span id="cb18-45"><a href="#cb18-45" aria-hidden="true" tabindex="-1"></a>    <span class="at">magnitude_squared =</span> <span class="st">"Magnitude squared"</span>,</span>
+<span id="cb18-46"><a href="#cb18-46" aria-hidden="true" tabindex="-1"></a>    <span class="at">magnitude_sqrt =</span> <span class="st">"Magnitude (square root)"</span></span>
+<span id="cb18-47"><a href="#cb18-47" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb18-48"><a href="#cb18-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-49"><a href="#cb18-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mtext</span>(<span class="at">side =</span> <span class="dv">3</span>, <span class="at">line =</span> <span class="dv">2</span>, <span class="at">at =</span> <span class="dv">0</span>, <span class="at">adj =</span> <span class="dv">0</span>, <span class="at">cex =</span> <span class="fl">1.3</span>, main)</span>
+<span id="cb18-50"><a href="#cb18-50" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mtext</span>(<span class="at">side =</span> <span class="dv">3</span>, <span class="at">line =</span> <span class="dv">1</span>, <span class="at">at =</span> <span class="dv">0</span>, <span class="at">adj =</span> <span class="dv">0</span>, <span class="at">cex =</span> <span class="dv">1</span>, sub)</span>
+<span id="cb18-51"><a href="#cb18-51" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now, let’s see a few wavelet diagrams. We are going to compare choices in two categories. The first concerns <em>what</em> is displayed: magnitude, magnitude squared, or the square root. Since options are finite, in practice you could always try them all. The second, however, is essential: It is about <code>K</code>, the scale of the Morlet wavelet.</p>
+<p>Though, in theory, the range of possible <code>K</code>s is infinite, as soon as we start to enlarge or shrink <code>K</code> we see the respective effects very quickly. And in a publication you can, of course, provide diagrams for a few different <code>K</code>. (Maybe you even <em>should</em>; the information conveyed might be complementary.)</p>
+<p>We start with a fixed <code>K</code> of 12, and stay with the default display (which is magnitude; see <a href="#fig-wav-example-long-diag1">fig.&nbsp;<span>28.9</span></a>). As to the range of frequencies to be analysed, it directly follows from our having generated the data ourselves.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>f_start <span class="ot">&lt;-</span> <span class="dv">70</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>f_end <span class="ot">&lt;-</span> <span class="dv">230</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>K <span class="ot">&lt;-</span> <span class="dv">12</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(grid, freqs) <span class="sc">%&lt;-%</span> <span class="fu">wavelet_grid</span>(</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  x, K, f_start, f_end, fs</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_wavelet_diagram</span>(</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">torch_tensor</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">dim</span>(grid)[<span class="dv">2</span>]), freqs, grid, K, fs, f_end</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-wav-example-long-diag1" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/wav-example-long-diag1.png" class="img-fluid figure-img" alt="A periodic square wave drawn in thick strokes."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;28.9: Wavelet diagram of the above alternating-frequency signal for K = 12. Displaying magnitude as per default.</figcaption><p></p>
+</figure>
+</div>
+<p>Now compare this with how it looks for squared magnitudes (<a href="#fig-wav-example-long-diag2">fig.&nbsp;<span>28.10</span></a>).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_wavelet_diagram</span>(</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">torch_tensor</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">dim</span>(grid)[<span class="dv">2</span>]), freqs, grid, K, fs, f_end,</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">"magnitude_squared"</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-wav-example-long-diag2" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/wav-example-long-diag2.png" class="img-fluid figure-img" alt="A periodic alternation of two thick-ish dashed lines."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;28.10: Wavelet diagram of the above alternating-frequency signal for K = 12. Displaying magnitude squared.</figcaption><p></p>
+</figure>
+</div>
+<p>As well as square roots (<a href="#fig-wav-example-long-diag3">fig.&nbsp;<span>28.11</span></a>):</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_wavelet_diagram</span>(</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">torch_tensor</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">dim</span>(grid)[<span class="dv">2</span>]), freqs, grid, K, fs, f_end,</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">"magnitude_sqrt"</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-wav-example-long-diag3" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/wav-example-long-diag3.png" class="img-fluid figure-img" alt="A periodic square wave drawn in thick, bulky strokes."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;28.11: Wavelet diagram of the above alternating-frequency signal for K = 12. Displaying the square root of the magnitude.</figcaption><p></p>
+</figure>
+</div>
+<p>In this case it is clear which display mode works best. But that’s just because we’ve created a <em>very</em> regular signal.</p>
+<p>Now, let’s see what happens for smaller <code>K</code>: 6, say. We only plot magnitude squared (<a href="#fig-wav-example-long-diag4">fig.&nbsp;<span>28.12</span></a>).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>K <span class="ot">&lt;-</span> <span class="dv">6</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(grid, freqs) <span class="sc">%&lt;-%</span> <span class="fu">wavelet_grid</span>(</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  x, K, f_start, f_end, fs</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_wavelet_diagram</span>(</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">torch_tensor</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">dim</span>(grid)[<span class="dv">2</span>]), freqs, grid, K, fs, f_end,</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">"magnitude_squared"</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-wav-example-long-diag4" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/wav-example-long-diag4.png" class="img-fluid figure-img" alt="A periodic alternation of two thick dashed lines."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;28.12: Wavelet diagram of the above alternating-frequency signal for K = 6.</figcaption><p></p>
+</figure>
+</div>
+<p>While frequency resolution clearly got worse, there is no complementary improvement in how time is handled. Again, this is no surprise, the signal being what it is.</p>
+<p>What about the other direction? For <code>K = 24</code> we have (<a href="#fig-wav-example-long-diag5">fig.&nbsp;<span>28.13</span></a>):</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>K <span class="ot">&lt;-</span> <span class="dv">24</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(grid, freqs) <span class="sc">%&lt;-%</span> <span class="fu">wavelet_grid</span>(</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  x, K, f_start, f_end, fs</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_wavelet_diagram</span>(</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">torch_tensor</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">dim</span>(grid)[<span class="dv">2</span>]), freqs, grid, K, fs, f_end,</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">"magnitude_squared"</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-wav-example-long-diag5" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/wav-example-long-diag5.png" class="img-fluid figure-img" alt="A periodic, overlapping alternation of two not-too-thick dashed lines."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;28.13: Wavelet diagram of the above alternating-frequency signal for K = 24.</figcaption><p></p>
+</figure>
+</div>
+<p>At this scale, we do see a decline in time resolution. Evidently, our initial choice of 12 was better. Just for curiosity’s sake, though, let’s see what would happen for yet bigger <code>K</code> (<a href="#fig-wav-example-long-diag6">fig.&nbsp;<span>28.14</span></a>).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>K <span class="ot">&lt;-</span> <span class="dv">48</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(grid, freqs) <span class="sc">%&lt;-%</span> <span class="fu">wavelet_grid</span>(</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  x, K, f_start, f_end, fs</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_wavelet_diagram</span>(</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">torch_tensor</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">dim</span>(grid)[<span class="dv">2</span>]), freqs, grid, K, fs, f_end,</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">"magnitude_squared"</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-wav-example-long-diag6" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/wav-example-long-diag6.png" class="img-fluid figure-img" alt="A dashed line, in the upper area of the image, and a solid line further down, that exhibits holes of sorts in the places where the dashed line appears."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;28.14: Wavelet diagram of the above alternating-frequency signal for K = 48.</figcaption><p></p>
+</figure>
+</div>
+<p>The result speaks for itself.</p>
+<p>Finally – now that we have available re-usable pieces of code, and acquired some first intuition on how time-frequency trade-off works for wavelets – we conclude with a real-world example.</p>
+</section>
+<section id="a-real-world-example-chaffinchs-song" class="level2" data-number="28.8">
+<h2 data-number="28.8" class="anchored" data-anchor-id="a-real-world-example-chaffinchs-song"><span class="header-section-number">28.8</span> A real-world example: Chaffinch’s song</h2>
+<p>For the case study, I’ve chosen what, to me, was the most impressive wavelet analysis shown in Vistnes’ book. It’s a sample of a chaffinch’s singing, and it’s available on Vistnes’ website.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>url <span class="ot">&lt;-</span> <span class="st">"http://www.physics.uio.no/pow/wavbirds/chaffinch.wav"</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="fu">download.file</span>(</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a> <span class="fu">file.path</span>(url),</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a> <span class="at">destfile =</span> <span class="st">"resources/chaffinch.wav"</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We use <code>torchaudio</code> to load the file, and convert from stereo to mono using <code>tuneR</code>’s appropriately named <code>mono()</code>. (For the kind of analysis we’re doing, there is no point in keeping two channels around.)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(torchaudio)</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tuneR)</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>wav <span class="ot">&lt;-</span> <span class="fu">tuneR_loader</span>(<span class="st">"resources/chaffinch.wav"</span>)</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>wav <span class="ot">&lt;-</span> <span class="fu">mono</span>(wav, <span class="st">"both"</span>)</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>wav</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>Wave Object
+    Number of Samples:      1864548
+    Duration (seconds):     42.28
+    Samplingrate (Hertz):   44100
+    Channels (Mono/Stereo): Mono
+    PCM (integer format):   TRUE
+    Bit (8/16/24/32/64):    16 </code></pre>
+<p>For analysis, we don’t need the complete sequence. Helpfully, Vistnes also published a recommendation as to which range of samples to analyze.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>waveform_and_sample_rate <span class="ot">&lt;-</span> <span class="fu">transform_to_tensor</span>(wav)</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> waveform_and_sample_rate[[<span class="dv">1</span>]]<span class="sc">$</span><span class="fu">squeeze</span>()</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>fs <span class="ot">&lt;-</span> waveform_and_sample_rate[[<span class="dv">2</span>]]</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="co"># http://www.physics.uio.no/pow/wavbirds/chaffinchInfo.txt</span></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>start <span class="ot">&lt;-</span> <span class="dv">34000</span></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">1024</span> <span class="sc">*</span> <span class="dv">128</span></span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>end <span class="ot">&lt;-</span> start <span class="sc">+</span> N <span class="sc">-</span> <span class="dv">1</span></span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> x[start<span class="sc">:</span>end]</span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(x)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>[1] 131072</code></pre>
+<p>See <a href="#fig-wav-chaffinch">fig.&nbsp;<span>28.15</span></a> for a time-domain view. (Don’t miss out on the occasion to actually <em>listen</em> to it, on your laptop.)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">x =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">dim</span>(x)[<span class="dv">1</span>], <span class="at">y =</span> <span class="fu">as.numeric</span>(x))</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> y)) <span class="sc">+</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"sample"</span>) <span class="sc">+</span></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"amplitude"</span>) <span class="sc">+</span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-wav-chaffinch" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/wav-chaffinch.png" class="img-fluid figure-img" alt="A sequence of several bursts, varying in height and thickness."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;28.15: Chaffinch’s song.</figcaption><p></p>
+</figure>
+</div>
+<p>Now, we need to determine a reasonable range of analysis frequencies. To that end, we run the FFT:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>F <span class="ot">&lt;-</span> <span class="fu">torch_fft_fft</span>(x)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>On the x-axis, we plot frequencies, not sample numbers, and for better visibility, we zoom in a bit (<a href="#fig-wav-chaffinch-fft">fig.&nbsp;<span>28.16</span></a>).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>bins <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">dim</span>(F)[<span class="dv">1</span>]</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>freqs <span class="ot">&lt;-</span> bins <span class="sc">/</span> N <span class="sc">*</span> fs</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a><span class="co"># the bin, not the frequency</span></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>cutoff <span class="ot">&lt;-</span> N<span class="sc">/</span><span class="dv">4</span></span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> freqs[<span class="dv">1</span><span class="sc">:</span>cutoff],</span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> <span class="fu">as.numeric</span>(F<span class="sc">$</span><span class="fu">abs</span>())[<span class="dv">1</span><span class="sc">:</span>cutoff]</span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> y)) <span class="sc">+</span></span>
+<span id="cb32-12"><a href="#cb32-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>() <span class="sc">+</span></span>
+<span id="cb32-13"><a href="#cb32-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"frequency (Hz)"</span>) <span class="sc">+</span></span>
+<span id="cb32-14"><a href="#cb32-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"magnitude"</span>) <span class="sc">+</span></span>
+<span id="cb32-15"><a href="#cb32-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-wav-chaffinch-fft" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/wav-chaffinch-fft.png" class="img-fluid figure-img" alt="A sequence of spikes, skewed to the left."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;28.16: Chaffinch’s song, Fourier spectrum (excerpt).</figcaption><p></p>
+</figure>
+</div>
+<p>Based on this distribution, we can safely restrict the range of analysis frequencies to between, approximately, 1800 and 8500 Hertz. (This is also the range recommended by Vistnes.)</p>
+<p>First, though, let’s anchor expectations by creating a spectrogram for this signal. Suitable values for FFT size and window size were found experimentally. And though, in spectrograms, you don’t see this done often, I found that displaying square roots of coefficient magnitudes yielded the most informative output.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>fft_size <span class="ot">&lt;-</span> <span class="dv">1024</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>window_size <span class="ot">&lt;-</span> <span class="dv">1024</span></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>power <span class="ot">&lt;-</span> <span class="fl">0.5</span></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>spectrogram <span class="ot">&lt;-</span> <span class="fu">transform_spectrogram</span>(</span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_fft =</span> fft_size,</span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">win_length =</span> window_size,</span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">normalized =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">power =</span> power</span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a>spec <span class="ot">&lt;-</span> <span class="fu">spectrogram</span>(x)</span>
+<span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(spec)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>[1] 513 257</code></pre>
+<p>Like we do with wavelet diagrams, we plot frequencies on a log scale (<a href="#fig-wav-chaffinch-spectrogram">fig.&nbsp;<span>28.17</span></a>).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>bins <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">dim</span>(spec)[<span class="dv">1</span>]</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>freqs <span class="ot">&lt;-</span> bins <span class="sc">*</span> fs <span class="sc">/</span> fft_size</span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>log_freqs <span class="ot">&lt;-</span> <span class="fu">log10</span>(freqs)</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>frames <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span>(<span class="fu">dim</span>(spec)[<span class="dv">2</span>])</span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>seconds <span class="ot">&lt;-</span> (frames <span class="sc">/</span> <span class="fu">dim</span>(spec)[<span class="dv">2</span>])  <span class="sc">*</span> (<span class="fu">dim</span>(x)[<span class="dv">1</span>] <span class="sc">/</span> fs)</span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a><span class="fu">image</span>(<span class="at">x =</span> seconds,</span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">y =</span> log_freqs,</span>
+<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a>      <span class="at">z =</span> <span class="fu">t</span>(<span class="fu">as.matrix</span>(spec)),</span>
+<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a>      <span class="at">ylab =</span> <span class="st">'log frequency [Hz]'</span>,</span>
+<span id="cb35-12"><a href="#cb35-12" aria-hidden="true" tabindex="-1"></a>      <span class="at">xlab =</span> <span class="st">'time [s]'</span>,</span>
+<span id="cb35-13"><a href="#cb35-13" aria-hidden="true" tabindex="-1"></a>      <span class="at">col =</span> <span class="fu">hcl.colors</span>(<span class="dv">12</span>, <span class="at">palette =</span> <span class="st">"Light grays"</span>)</span>
+<span id="cb35-14"><a href="#cb35-14" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb35-15"><a href="#cb35-15" aria-hidden="true" tabindex="-1"></a>main <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"Spectrogram, window size = "</span>, window_size)</span>
+<span id="cb35-16"><a href="#cb35-16" aria-hidden="true" tabindex="-1"></a>sub <span class="ot">&lt;-</span> <span class="st">"Magnitude (square root)"</span></span>
+<span id="cb35-17"><a href="#cb35-17" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext</span>(<span class="at">side =</span> <span class="dv">3</span>, <span class="at">line =</span> <span class="dv">2</span>, <span class="at">at =</span> <span class="dv">0</span>, <span class="at">adj =</span> <span class="dv">0</span>, <span class="at">cex =</span> <span class="fl">1.3</span>, main)</span>
+<span id="cb35-18"><a href="#cb35-18" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext</span>(<span class="at">side =</span> <span class="dv">3</span>, <span class="at">line =</span> <span class="dv">1</span>, <span class="at">at =</span> <span class="dv">0</span>, <span class="at">adj =</span> <span class="dv">0</span>, <span class="at">cex =</span> <span class="dv">1</span>, sub)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-wav-chaffinch-spectrogram" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/wav-chaffinch-spectrogram.png" class="img-fluid figure-img" alt="A two-dimensional heat map, indicating high values, strongly varying in time, around log frequency 3.5 Hz."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;28.17: Chaffinch’s song, spectrogram.</figcaption><p></p>
+</figure>
+</div>
+<p>The spectrogram already shows a distinctive pattern. Let’s see what can be done with wavelet analysis. Having experimented with a few different <code>K</code>, I agree with Vistnes that <code>K = 48</code> makes for an excellent choice (<a href="#fig-wav-chaffinch-waveletdiag">fig.&nbsp;<span>28.18</span></a>):</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>f_start <span class="ot">&lt;-</span> <span class="dv">1800</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>f_end <span class="ot">&lt;-</span> <span class="dv">8500</span></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>K <span class="ot">&lt;-</span> <span class="dv">48</span></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(grid, freqs) <span class="sc">%&lt;-%</span> <span class="fu">wavelet_grid</span>(x, K, f_start, f_end, fs)</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_wavelet_diagram</span>(</span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">torch_tensor</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">dim</span>(grid)[<span class="dv">2</span>]),</span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>  freqs, grid, K, fs, f_end,</span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">"magnitude_sqrt"</span></span>
+<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-wav-chaffinch-waveletdiag" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/wav-chaffinch-waveletdiag.png" class="img-fluid figure-img" alt="A two-dimensional heat map, of high resolution, that strongly emphasizes how patterns vary in time."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;28.18: Chaffinch’s song, wavelet diagram.</figcaption><p></p>
+</figure>
+</div>
+<p>The gain in resolution, on both the time and the frequency axis, is utterly impressive.</p>
+<p>With this example, that hopefully has been an inspiring one, I conclude this chapter, and the book. I wish you all the best in your future endeavours with <code>torch</code>!</p>
+
+
+<div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
+<div id="ref-waves" class="csl-entry" role="listitem">
+Vistnes, Arnt Inge. 2018. <em>Physics of Oscillations and Waves. With Use of Matlab and Python</em>. Springer.
+</div>
+</div>
+</section>
+<section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn1"><p>After Dennis Gabor, who came up with the idea of using Gaussian-windowed complex exponentials for time-frequency decomposition, and Jean Morlet, who elaborated on and formalized the resulting transform.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./fourier_transform_fft.html" class="pagination-link">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">The Fast Fourier Transform (FFT)</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./references.html" class="pagination-link">
+        <span class="nav-page-text">References</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+</body></html>

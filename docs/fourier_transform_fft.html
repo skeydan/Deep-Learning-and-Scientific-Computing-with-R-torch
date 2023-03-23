@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-99.9.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Deep Learning and Scientific Computing with R torch - 27&nbsp; The Fast Fourier Transform (FFT)</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./wavelets.html" rel="next">
+<link href="./fourier_transform_dft.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./other_overview.html">Other things to do with torch: Matrices, Fourier Transform, and Wavelets</a></li><li class="breadcrumb-item"><a href="./fourier_transform_fft.html"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">The Fast Fourier Transform (FFT)</span></a></li></ol></nav>
+      <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+      </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Deep Learning and Scientific Computing with R torch</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">Getting familiar with torch</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./basics_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Overview</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./what_is_torch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">On <code>torch</code>, and how to get it</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./tensors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Tensors</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Autograd</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optim_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Function minimization with <em>autograd</em></span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./network_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">A neural network from scratch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./modules.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Modules</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optimizers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Optimizers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./loss_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Loss functions</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optim_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Function minimization with L-BFGS</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./network_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Modularizing the neural network</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">Deep learning with torch</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./dl_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Overview</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Loading data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./training_with_luz.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Training with luz</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./image_classification_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">A first go at image classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./overfitting.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Making models generalize</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./training_efficiency.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Speeding up training</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./image_classification_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Image classification, take two: Improving performance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./image_segmentation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Image segmentation</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./tabular_data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Tabular data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Time series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./audio_classification.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Audio classification</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">Other things to do with torch: Matrices, Fourier Transform, and Wavelets</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./other_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Overview</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./matrix_computations_leastsquares.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Matrix computations: Least-squares problems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./matrix_computations_convolution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Matrix computations: Convolution</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./fourier_transform_dft.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Exploring the Discrete Fourier Transform (DFT)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./fourier_transform_fft.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">The Fast Fourier Transform (FFT)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wavelets.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Wavelets</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#some-terminology" id="toc-some-terminology" class="nav-link active" data-scroll-target="#some-terminology"><span class="header-section-number">27.1</span> Some terminology</a></li>
+  <li><a href="#radix-2-decimation-in-timedit-walkthrough" id="toc-radix-2-decimation-in-timedit-walkthrough" class="nav-link" data-scroll-target="#radix-2-decimation-in-timedit-walkthrough"><span class="header-section-number">27.2</span> Radix-2 decimation-in-time(DIT) walkthrough</a>
+  <ul class="collapse">
+  <li><a href="#the-main-idea-recursive-split" id="toc-the-main-idea-recursive-split" class="nav-link" data-scroll-target="#the-main-idea-recursive-split"><span class="header-section-number">27.2.1</span> The main idea: Recursive split</a></li>
+  <li><a href="#one-further-simplification" id="toc-one-further-simplification" class="nav-link" data-scroll-target="#one-further-simplification"><span class="header-section-number">27.2.2</span> One further simplification</a></li>
+  </ul></li>
+  <li><a href="#fft-as-matrix-factorization" id="toc-fft-as-matrix-factorization" class="nav-link" data-scroll-target="#fft-as-matrix-factorization"><span class="header-section-number">27.3</span> FFT as matrix factorization</a></li>
+  <li><a href="#implementing-the-fft" id="toc-implementing-the-fft" class="nav-link" data-scroll-target="#implementing-the-fft"><span class="header-section-number">27.4</span> Implementing the FFT</a>
+  <ul class="collapse">
+  <li><a href="#dft-the-loopy-way" id="toc-dft-the-loopy-way" class="nav-link" data-scroll-target="#dft-the-loopy-way"><span class="header-section-number">27.4.1</span> DFT, the “loopy” way</a></li>
+  <li><a href="#dft-vectorized" id="toc-dft-vectorized" class="nav-link" data-scroll-target="#dft-vectorized"><span class="header-section-number">27.4.2</span> DFT, vectorized</a></li>
+  <li><a href="#radix-2-decimation-in-time-fft-recursive" id="toc-radix-2-decimation-in-time-fft-recursive" class="nav-link" data-scroll-target="#radix-2-decimation-in-time-fft-recursive"><span class="header-section-number">27.4.3</span> Radix-2 decimation in time FFT, recursive</a></li>
+  <li><a href="#radix-2-decimation-in-time-fft-by-matrix-factorization" id="toc-radix-2-decimation-in-time-fft-by-matrix-factorization" class="nav-link" data-scroll-target="#radix-2-decimation-in-time-fft-by-matrix-factorization"><span class="header-section-number">27.4.4</span> Radix-2 decimation in time FFT by matrix factorization</a></li>
+  <li><a href="#radix-2-decimation-in-time-fft-optimized-for-vectorization" id="toc-radix-2-decimation-in-time-fft-optimized-for-vectorization" class="nav-link" data-scroll-target="#radix-2-decimation-in-time-fft-optimized-for-vectorization"><span class="header-section-number">27.4.5</span> Radix-2 decimation in time FFT, optimized for vectorization</a></li>
+  <li><a href="#checking-against-torch_fft_fft" id="toc-checking-against-torch_fft_fft" class="nav-link" data-scroll-target="#checking-against-torch_fft_fft"><span class="header-section-number">27.4.6</span> Checking against <code>torch_fft_fft()</code></a></li>
+  <li><a href="#comparing-performance" id="toc-comparing-performance" class="nav-link" data-scroll-target="#comparing-performance"><span class="header-section-number">27.4.7</span> Comparing performance</a></li>
+  <li><a href="#making-use-of-just-in-time-jit-compilation" id="toc-making-use-of-just-in-time-jit-compilation" class="nav-link" data-scroll-target="#making-use-of-just-in-time-jit-compilation"><span class="header-section-number">27.4.8</span> Making use of Just-in-Time (JIT) compilation</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span id="sec:signal-processing-2" class="quarto-section-identifier"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">The Fast Fourier Transform (FFT)</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<p>In the last chapter, we saw that to code the Discrete Fourier Transform (DFT), we need just a few lines of code – notwithstanding the depth and richness of the theory. Surprisingly, it’s not that different for the FFT, the famous <em>Fast Fourier Transform</em>.</p>
+<p>In this chapter, we’ll first look at what the FFT (more precisely: its “most classic” version) actually does, building on the understanding we gained in the previous chapter.</p>
+<p>Then, we’ll code up a few different implementations, and time their performance. None of the hand-coded implementations will, of course, be able to outperform <code>torch_fft_fft()</code>, <code>torch</code> delegating to highly optimized C++ code. But our results will be interesting in many ways: We’ll see that in practice, it is not just the algorithm per se that matters. The programming language, too, plays an essential role, in the sense that its properties substantially affect feasibility of improvements. Put differently, there is an <em>interaction</em> between algorithmic and language-inherent properties that will decide on the final outcome.</p>
+<p>First though, in this book’s spirit of aiming to shed a light on the ideas and concepts involved, we would like to understand what is involved in the Fast Fourier Transform.</p>
+<section id="some-terminology" class="level2" data-number="27.1">
+<h2 data-number="27.1" class="anchored" data-anchor-id="some-terminology"><span class="header-section-number">27.1</span> Some terminology</h2>
+<p>Let me make clear right at the outset that, as compared to the DFT, the FFT is <em>not another transform</em>. Its output is just the same as that of the DFT. With the FFT, it’s all about the “fast”. Also, there is no “one” FFT. Instead, there are different families; and in each family, there are various sub-types.</p>
+<p>Here, I’m focusing on the “classic among the classics”: the one that goes by <em>radix-2 decimation-in-time (DIT)</em>. Here “radix-2” refers to an implementation detail; it indicates that the algorithm will require input size to equal a power of two. “Decimation in time”, on the other hand, relates to the overall strategy being employed: divide-and-conquer. The input is recursively split into halves, and partial results are combined in a clever way. (Just as an aside, there is a very similar algorithm called “decimation in frequency”. There, it is the frequency domain where recursive splitting occurs.)</p>
+<p>Now, we discuss how this works. You’ll see that once we’ve worked out clearly what we want to do, a (naive) implementation does not require more code than the straightforward DFT from the last chapter. And please be assured that although this section has many equations, each and every manipulation will be explained in words.</p>
+</section>
+<section id="radix-2-decimation-in-timedit-walkthrough" class="level2" data-number="27.2">
+<h2 data-number="27.2" class="anchored" data-anchor-id="radix-2-decimation-in-timedit-walkthrough"><span class="header-section-number">27.2</span> Radix-2 decimation-in-time(DIT) walkthrough</h2>
+<p>The simplifications resulting from <em>decimation in time</em> can be presented as a two-step logic. Reflecting that view, and re-using (with different semantics) terminology employed in the convolution chapter, I could call them “input-view phase” and “output-view phase”. However, these are not phases in a temporal sense, and more importantly – in a software-focused book – we’ll see that as ported to code, their respective impacts differ a lot. Therefore, I’ll name the upcoming two sections in ways reflecting importance instead. (I’ll still make clear what I mean by input and output views here, though.)</p>
+<section id="the-main-idea-recursive-split" class="level3" data-number="27.2.1">
+<h3 data-number="27.2.1" class="anchored" data-anchor-id="the-main-idea-recursive-split"><span class="header-section-number">27.2.1</span> The main idea: Recursive split</h3>
+<p>As we would expect for a divide-and-conquer algorithm, the main and most impactful observation is that if the input is split up recursively, the problem can be divided into sub-problems that get increasingly easier to solve – provided we know how to combine the partial results into a final solution.</p>
+<p>Before we start, let me recall some notation, and make a slight modification that will turn out convenient. In the previous chapter, with <span class="math inline">\(N\)</span> the size of the input (equivalently, the number of resulting frequency coefficients), and <span class="math inline">\(k\)</span> (ranging from zero to <span class="math inline">\(N-1\)</span>) referencing the vector in question, the DFT basis vectors were defined like so:</p>
+<p><span class="math display">\[
+\mathbf{w}^{kn}_N = e^{i\frac{2 \pi}{N}k n}
+\]</span></p>
+<p>Then, the <span class="math inline">\(k\)</span>th frequency coefficient was obtained by computing the inner product between <span class="math inline">\(\mathbf{w}^{kn}_N\)</span> and the input, <span class="math inline">\(\mathbf{x}_n\)</span>:</p>
+<p><span class="math display">\[
+\begin{aligned}
+X_k &amp;= \langle \mathbf{w}^{kn}_N, \mathbf{x}_n \rangle \\ &amp;= \sum_{n=0}^{N-1} x[n] \ w^{-nk}_N\\
+\end{aligned}
+\]</span></p>
+<p>In this chapter, we will be working with the complex conjugates of the basis vectors throughout, since it’s those that actually get (element-wise) multiplied with the input vector. For convenience, we thus slightly change notation, and let <span class="math inline">\(w^{kn}_N\)</span> refer to the conjugated complex exponential<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>:</p>
+<p><span id="eq-fft-1"><span class="math display">\[
+w^{kn}_N = e^{-i\frac{2 \pi}{N}k n}
+\tag{27.1}\]</span></span></p>
+<p>Then, abstracting over <span class="math inline">\(n\)</span>, we also have <span id="eq-fft-2"><span class="math display">\[
+w^k_N = e^{-i\frac{2 \pi}{N}k}
+\tag{27.2}\]</span></span></p>
+<p>That said, we state again what we want to compute: the frequency coefficients <span class="math inline">\(X_k\)</span>.</p>
+<p><span class="math display">\[
+\begin{aligned}
+X_k &amp;=  \sum_{n=0}^{N-1} x[n] \ w^{nk}_N\\
+\end{aligned}
+\]</span></p>
+<p>Now comes what I was thinking to refer to as the “input view”. We take the input sequence, and divide up the computation into two parts. One will deal with the even, the other, with the odd indices of the signal. So expressed, the sums only go up to <span class="math inline">\(N/2 - 1\)</span>.</p>
+<p><span id="eq-fft-3"><span class="math display">\[
+\begin{aligned}
+X_k &amp;=  \sum_{n=0}^{(N/2-1)} x[2n] \ w^{2nk}_N + \sum_{n=0}^{N/2-1} x[2n+1] \ w^{(2n+1)k}_N \\
+\end{aligned}
+\tag{27.3}\]</span></span></p>
+<p>Now, that second sum can be rewritten, splitting up the <span class="math inline">\(w^{2nk+k}_N\)</span> into two factors:</p>
+<p><span class="math display">\[
+\sum_{n=0}^{N/2-1} x[2n+1] \ w^{2nk+k}_N = \sum_{n=0}^{N/2-1} x[2n+1] \ w^{2nk}_N w^{k}_N
+\]</span></p>
+<p>The second factor is exactly the <span class="math inline">\(w^{k}_N\)</span> we were introducing above. Since it does not depend on <span class="math inline">\(n\)</span>, we can move it out of the sum. This yields</p>
+<p><span class="math display">\[
+\begin{aligned}
+X_k &amp;=  \sum_{n=0}^{(N/2-1)} x[2n] \ w^{2nk}_N + w^k_N \sum_{n=0}^{N/2-1} x[2n+1] \ w^{2nk}_N \\
+\end{aligned}
+\]</span></p>
+<p>Now the exponential factor is the same in both sums. Let’s inspect it a bit more closely. It is the multiplication factor of a DFT of size <span class="math inline">\(N\)</span>, at (frequency-by-time) position <span class="math inline">\(2nk\)</span>. If we write this out, we see that we can move the factor <span class="math inline">\(2\)</span> from the numerator to the denominator of the fraction:</p>
+<p><span class="math display">\[
+w^{2nk}_N = e^{-i\frac{2 \pi}{N}2nk} = e^{-i\frac{2 \pi}{N/2}nk} = w^{nk}_{N/2}
+\]</span></p>
+<p>Why does this matter? The result is actually the corresponding basis vector of a DFT of size <span class="math inline">\(N/2\)</span>, at position <span class="math inline">\(nk\)</span>. Which means that now, we are actually computing a DFT of <em>half the size</em> – or rather, two such DFTs:</p>
+<p><span id="eq-fft-4"><span class="math display">\[
+X_k =  \sum_{n=0}^{(N/2-1)} x[2n] \ w^{nk}_{N/2} + w^k_N \ \sum_{n=0}^{N/2-1} x[2n+1] \ w^{nk}_{N/2} \\
+\tag{27.4}\]</span></span></p>
+<p>Let’s write this in more readable form:</p>
+<p><span id="eq-fft-5"><span class="math display">\[
+X_k =  X^{even}_k +  w^k_N \ X^{odd}_k
+\tag{27.5}\]</span></span></p>
+<p>Now, you probably see where this is going. What we’ve done once – halve the size of the computation – we can do again … and again. It is this recursive halving that allows the FFT to obtain it famous reduction in computational cost.</p>
+<p>This is the main ingredient of the magic, but it is not quite everything yet.</p>
+</section>
+<section id="one-further-simplification" class="level3" data-number="27.2.2">
+<h3 data-number="27.2.2" class="anchored" data-anchor-id="one-further-simplification"><span class="header-section-number">27.2.2</span> One further simplification</h3>
+<p>There is one additional simplification we can make. Compared to the first, it is of lesser significance, at least as far as computational performance is concerned. However, it definitely matters from an aesthetics point of view.</p>
+<p>Did you notice something strange in our final formula? We are computing DFTs of size <span class="math inline">\(N/2\)</span>, but still, the factor <span class="math inline">\(w^k_N\)</span> appears! This isn’t a problem, but it is not “nice”, either. Fortunately, for those who mind, the “inconsequence” can be eliminated.</p>
+<p>What follows is what I was tempted to name the “output-side view”. That’s because now, we roll up things from the end, starting from the computation’s output. We take the set of Fourier coefficients <span class="math inline">\(X_k\)</span>, and independently consider the first and the second half. Note how here, like in the input-centric view, we apply a split-in-two strategy; just this time, the halving is done in a different way.</p>
+<p>Looking at both halves, we notice that both have their dedicated subsets of multiplication factors <span class="math inline">\(w^k_N\)</span>, one with <span class="math inline">\(k\)</span> ranging from <span class="math inline">\(0\)</span> to <span class="math inline">\(N/2-1\)</span>, the other, from <span class="math inline">\(N/2\)</span> to <span class="math inline">\(N-1\)</span>. For the first, this means we can change the upper limit in the sum, yielding</p>
+<p><span class="math display">\[
+X^{upper}_k =  X^{even}_k +  w^k_N \ X^{odd}_k \ , \ \ k = 0 ... N/2-1
+\]</span></p>
+<p>For the second, we can achieve the desired result by summing over the same range, but adding <span class="math inline">\(N/2\)</span> to <span class="math inline">\(k\)</span> everywhere.</p>
+<p><span class="math display">\[
+X^{lower}_{k+N/2} =  \sum_{n=0}^{N/2-1} x[2n] \ w^{n (k+N/2)}_{N/2} + w^{k+N/2}_N \ \sum_{n=0}^{N/2-1} x[2n + 1] \ w^{n (k+ N/2)}_{N/2} \\
+\]</span></p>
+<p>Now, in the first of the sums that make up <span class="math inline">\(X^{lower}\)</span>, the exponential can be factored, and we see that the factor containing the <span class="math inline">\(N/2\)</span> evaluates to <span class="math inline">\(1\)</span> (and thus, disappears):</p>
+<p><span class="math display">\[
+\begin{aligned}
+w^{n(k+N/2)}_{N/2}&amp;= e^{-i\frac{2 \pi}{N/2} n (k + N/2)} \\ &amp;= e^{-i\frac{2 \pi}{N/2}n k} *  e^{-i\frac{2 \pi}{N/2}n (N/2)} \\ &amp;= e^{-i\frac{2 \pi}{N/2}n k} *  e^{-i\frac{2 \pi}{N/2}(N/2)} \\ &amp;= e^{-i\frac{2 \pi}{N/2}n k} *  1
+\end{aligned}
+\]</span></p>
+<p>As a result, the first of the sums now looks like this:</p>
+<p><span class="math display">\[
+X^{lower}_{k+N/2} =  \sum_{n=0}^{N/2-1} x[2n] \ w^{n k}_{N/2} + [...]
+\]</span></p>
+<p>The same thing can be done in the second sum:</p>
+<p><span class="math display">\[
+X^{lower}_{k+N/2} =  [...] + w^{k+N/2}_N \ \sum_{n=0}^{N/2-1} x[2n + 1] \ w^{n k}_{N/2} \\
+\]</span></p>
+<p>Now there’s just one last inconvenient index of <span class="math inline">\(k + N/2\)</span> remaining. A calculation similar to that above shows we can replace it by a minus sign:</p>
+<p><span class="math display">\[
+\begin{aligned}
+w^{k+N/2}_N&amp;= e^{-i\frac{2 \pi}{N} (k + N/2)} \\
+&amp;= e^{-i\frac{2 \pi}{N} k} * e^{-i\frac{2 \pi}{N} N/2}\\
+&amp;= e^{-i\frac{2 \pi}{N} k} * e^{-i \pi}\\
+&amp;= e^{-i\frac{2 \pi}{N} k} * (-1)\\
+\end{aligned}
+\]</span></p>
+<p>In consequence, the complete second part can be written like this:</p>
+<p><span class="math display">\[
+X^{lower}_{k+N/2} =  \sum_{n=0}^{N/2-1} x[2n] \ w^{n k}_{N/2} - w^k_N \ \sum_{n=0}^{N/2-1} x[2n + 1] \ w^{n k}_{N/2}
+\]</span></p>
+<p>And now, the second half looks nearly like the first one, just with a change in sign. Here, then, is the final algorithm:</p>
+<p><span id="eq-fft-6"><span class="math display">\[
+\begin{aligned}
+&amp; X^{upper}_k =  X^{even}_k +  w^k_N \ X^{odd}_k \ , \ \ k = 0 ... N/2-1 \\
+&amp; X^{lower}_{k+N/2} =  X^{even}_k -  w^k_N \ X^{odd}_k \ , \ \ k = 0 ... N/2-1
+\end{aligned}
+\tag{27.6}\]</span></span></p>
+<p>Owed to a popular form of visualization, this representation is often referred to as the “butterfly”. If you’re curious, you won’t have problems finding related diagrams on the net. Personally, I don’t find them very helpful, which is why I’m not reproducing them here.</p>
+<p>In conclusion, we’ve now arrived at a rule that tells us how to simplify an FFT of size <span class="math inline">\(N\)</span> by replacing it with an FFT of size <span class="math inline">\(N/2\)</span>. The complete algorithm then consists in recursive application of that rule.</p>
+<p>We’re ready to start thinking about how to implement this.</p>
+</section>
+</section>
+<section id="fft-as-matrix-factorization" class="level2" data-number="27.3">
+<h2 data-number="27.3" class="anchored" data-anchor-id="fft-as-matrix-factorization"><span class="header-section-number">27.3</span> FFT as matrix factorization</h2>
+<p>Below, we’ll explore different ways of coding the FFT. In two of them, you’ll directly recognize the rule <a href="#eq-fft-6">Equation&nbsp;<span>27.6</span></a>. The third is different, though. It makes direct use of the fact that the DFT matrix <span class="math inline">\(\mathbf{W}_N\)</span> can be factored into three sparse matrices, each materializing one of the three stages inherent in the rule: split up the input into even and odd indices; compute the two half-sized FFTs; recombine the results.</p>
+<p>For example, take <span class="math inline">\(\mathbf{W}_4\)</span>, the matrix we analyzed in the previous chapter:</p>
+<p><span class="math display">\[
+\mathbf{W}_4
+=
+\begin{bmatrix}
+1 &amp;   1  &amp; 1 &amp;  1\\
+1 &amp;   -i  &amp; -1 &amp;  i\\
+1 &amp;   -1  &amp; 1 &amp;  -1\\
+1 &amp;   i  &amp; -1 &amp;  -i\\
+\end{bmatrix}
+\]</span></p>
+<p>This can be factorized into three matrices like so:</p>
+<p><span class="math display">\[
+\begin{aligned}
+\mathbf{W}_4
+&amp;=
+\begin{bmatrix}
+1 &amp;   1  &amp; 1 &amp;  1\\
+1 &amp;   -i  &amp; -1 &amp;  i\\
+1 &amp;   -1  &amp; 1 &amp;  -1\\
+1 &amp;   i  &amp; -1 &amp;  -i\\
+\end{bmatrix} \\
+&amp;=
+\begin{bmatrix}
+1 &amp;   0  &amp; 1 &amp;  0\\
+0 &amp;   1  &amp; 0 &amp;  -i\\
+1 &amp;   0  &amp; -1 &amp;  0\\
+0 &amp;   1  &amp; 0 &amp;  i\\
+\end{bmatrix}
+\begin{bmatrix}
+1 &amp;   1  &amp; 0 &amp;  0\\
+1 &amp;   -1  &amp;  0 &amp;  0\\
+0 &amp;   0  &amp; 1 &amp;  1\\
+0 &amp;   0  &amp; 1 &amp;  -1\\
+\end{bmatrix}
+\begin{bmatrix}
+1 &amp;   0  &amp; 0 &amp;  0\\
+0 &amp;   0  &amp; 1 &amp;  0\\
+0 &amp;   1  &amp; 0 &amp;  0\\
+0 &amp;   0  &amp; 0 &amp;  1\\
+\end{bmatrix}
+\end{aligned}
+\]</span></p>
+<p>The rightmost matrix (call it <span class="math inline">\(P\)</span>, for permutation) reorders the input. Here’s how it acts on a suitably-sized input vector.</p>
+<p><span class="math display">\[
+\mathbf{P}_4 \mathbf{x}
+=
+\begin{bmatrix}
+1 &amp;   0  &amp; 0 &amp;  0\\
+0 &amp;   0  &amp; 1 &amp;  0\\
+0 &amp;   1  &amp; 0 &amp;  0\\
+0 &amp;   0  &amp; 0 &amp;  1\\
+\end{bmatrix}
+\begin{bmatrix}
+x1 \\
+x2 \\
+x3 \\
+x4 \\
+\end{bmatrix}
+=
+\begin{bmatrix}
+x1 \\
+x3 \\
+x2 \\
+x4 \\
+\end{bmatrix}
+\]</span></p>
+<p>Now that even- and odd-indexed values are nicely separated, we can construct a block matrix that applies a DFT to each of those groups in isolation. In this case, the DFT in question is of size two. If you look at the central matrix above, you’ll see that it contains two instances of <span class="math inline">\(\mathbf{W}_2\)</span>, with <span class="math inline">\(\mathbf{W}_2\)</span> being</p>
+<p><span class="math display">\[
+\mathbf{W}_2 =
+\begin{bmatrix}
+1 &amp;   1  \\
+1 &amp;   -1 \\
+\end{bmatrix}
+\]</span></p>
+<p>Taking as input the permuted signal, <span class="math inline">\(\mathbf{P}_4 \mathbf{x}\)</span>, the block matrix produces the following output:</p>
+<p><span class="math display">\[
+\mathbf{W}_{2*2}\mathbf{P}_{4}\mathbf{x}
+=
+\begin{bmatrix}
+1 &amp;   1  &amp; 0 &amp;  0\\
+1 &amp;   -1  &amp;  0 &amp;  0\\
+0 &amp;   0  &amp; 1 &amp;  1\\
+0 &amp;   0  &amp; 1 &amp;  -1\\
+\end{bmatrix}
+\begin{bmatrix}
+x1 \\
+x3 \\
+x2 \\
+x4 \\
+\end{bmatrix}
+=
+\begin{bmatrix}
+x1+x3 \\
+x1-x3 \\
+x2+x4 \\
+x2-x4 \\
+\end{bmatrix}
+\]</span></p>
+<p>Next, the two sets of coefficients need to be recombined in the correct way. Personally, I find it hard to mentally picture how the leftmost matrix in the factorization does it; so let’s try if we can build up the matrix ourselves.</p>
+<p>The FFT rule <a href="#eq-fft-6">Equation&nbsp;<span>27.6</span></a> tells us what has to happen. Here it is again:</p>
+<p><span class="math display">\[
+X^{upper}_k =  X^{even}_k +  w^k_N \ X^{odd}_k \ , \ \ k = 0 ... N/2-1
+\]</span></p>
+<p><span class="math display">\[
+X^{lower}_{k+N/2} =  X^{even}_k -  w^k_N \ X^{odd}_k \ , \ \ k = 0 ... N/2-1
+\]</span></p>
+<p>In this example, <span class="math inline">\(N/2\)</span> is 2; we thus need <span class="math inline">\(w^0_4\)</span> and <span class="math inline">\(w^1_4\)</span>. Their values are</p>
+<p><span class="math display">\[
+\begin{aligned}
+&amp;w^0_4 = e^{-i\frac{2 \pi}{4}0} = 1\\
+&amp;w^1_4 = e^{-i\frac{2 \pi}{4}1} = -i\\
+\end{aligned}
+\]</span></p>
+<p>As an aside, we could also have read them off the transformation matrix, <span class="math inline">\(W_4\)</span>: These are the first two basis vectors, computed at <span class="math inline">\(n=1\)</span>, and thus are found right on top of the second column.</p>
+<p>Now, we just mechanically apply the rule.</p>
+<p><span class="math display">\[
+\begin{aligned}
+&amp;X_0 = X^{upper}_0 = X^{even}_0 +  w^0_4 \ X^{odd}_0 = (x_1 + x_3) + 1 * (x_2 + x_4)  \\
+&amp;X_1 = X^{upper}_1 = X^{even}_1 +  w^1_4 \ X^{odd}_1 = (x_1 - x_3) - i * (x_2 - x_4)  \\
+&amp;X_2 = X^{lower}_2 = X^{even}_0 -  w^0_4 \ X^{odd}_0 = (x_1 + x_3) - 1 * (x_2 + x_4)  \\
+&amp;X_3 = X^{lower}_3 = X^{even}_1 -  w^1_4 \ X^{odd}_1 = (x_1 - x_3) + i * (x_2 - x_4)  \\
+\end{aligned}
+\]</span></p>
+<p>This gives us the multiplication factors to be applied to the vector input. All that remains to be done is put them into a matrix. Directly reading off the above equations, and filling in zeroes whenever an input is not used, this is what we obtain for the “butterfly” matrix <span class="math inline">\(\mathbf{B}\)</span>:</p>
+<p><span class="math display">\[
+\mathbf{B}_4
+=
+\begin{bmatrix}
+1 &amp;   0  &amp; 1 &amp;  0\\
+0 &amp;   1  &amp; 0 &amp;  -i\\
+1 &amp;   0  &amp; -1 &amp;  0\\
+0 &amp;   1  &amp; 0 &amp;  i\\
+\end{bmatrix}
+\]</span></p>
+<p>Comparing with the leftmost matrix in the factorization, we see we’ve arrived at the correct result.</p>
+<p>One thing that’s not immediately clear, however, is how to implement this recursively. It certainly seems like a lot of overhead to compute the complete matrix factorization at every recursive step. Fortunately, this is not needed. For one, the sorting can be done just once, right in the beginning. And secondly, it turns out that the matrices I’ve been referring to as <span class="math inline">\(\mathbf{W}_{2*2}\)</span> and <span class="math inline">\(\mathbf{B}_{4}\)</span> are intimately related: <span class="math inline">\(\mathbf{B}_{4}\)</span> is what would go into a block matrix <span class="math inline">\(\mathbf{W}_{4*4}\)</span>.</p>
+<p>The recursive procedure can then be laid out very clearly. Here, for example, is how the complete procedure would look for an input size of 8:</p>
+<p><span class="math display">\[
+\mathbf{W}_8
+=
+\mathbf{B}_8
+\begin{bmatrix}
+\mathbf{B}_4 &amp;  \mathbf{0}\\
+\mathbf{0} &amp;  \mathbf{B}_4\\
+\end{bmatrix}
+\begin{bmatrix}
+\mathbf{B}_2 &amp;   \mathbf{0}  &amp; \mathbf{0} &amp;  \mathbf{0}\\
+\mathbf{0} &amp;   \mathbf{B}_2  &amp;  \mathbf{0} &amp;  \mathbf{0}\\
+\mathbf{0} &amp;   \mathbf{0}  &amp; \mathbf{B}_2 &amp;  \mathbf{0}\\
+\mathbf{0} &amp;   \mathbf{0}  &amp; \mathbf{0} &amp;  \mathbf{B}_2\\
+\end{bmatrix}
+\mathbf{R}
+\]</span></p>
+<p><span class="math inline">\(\mathbf{R}\)</span> is the matrix that, once and for all, sorts the input in the required way. I’ve written <span class="math inline">\(\mathbf{R}\)</span> for “bit reversal”, since that is the actual algorithm used. We won’t go into its workings here, but explanations are readily found on the web.</p>
+<p>Having discussed DFT matrix factorization, we’re ready to look at some code.</p>
+</section>
+<section id="implementing-the-fft" class="level2" data-number="27.4">
+<h2 data-number="27.4" class="anchored" data-anchor-id="implementing-the-fft"><span class="header-section-number">27.4</span> Implementing the FFT</h2>
+<p>We discuss and compare for performance three different implementations of the FFT, plus our two DFT versions from the last chapter. Let me start by listing, again, what we did there.</p>
+<section id="dft-the-loopy-way" class="level3" data-number="27.4.1">
+<h3 data-number="27.4.1" class="anchored" data-anchor-id="dft-the-loopy-way"><span class="header-section-number">27.4.1</span> DFT, the “loopy” way</h3>
+<p>This was the way we first coded the DFT, computing the dot products between input and each basis vector in a loop.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(torch)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>dft <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  n_samples <span class="ot">&lt;-</span> <span class="fu">length</span>(x)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="fu">torch_arange</span>(<span class="dv">0</span>, n_samples <span class="sc">-</span> <span class="dv">1</span>)<span class="sc">$</span><span class="fu">unsqueeze</span>(<span class="dv">1</span>)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  F <span class="ot">&lt;-</span> <span class="fu">torch_complex</span>(</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">torch_zeros</span>(n_samples),</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">torch_zeros</span>(n_samples)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">0</span><span class="sc">:</span>(n_samples <span class="sc">-</span> <span class="dv">1</span>)) {</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    w_k <span class="ot">&lt;-</span> <span class="fu">torch_exp</span>(<span class="sc">-</span>1i <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> pi <span class="sc">/</span> n_samples <span class="sc">*</span> k <span class="sc">*</span> n)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    dot <span class="ot">&lt;-</span> <span class="fu">torch_matmul</span>(w_k, x<span class="sc">$</span><span class="fu">to</span>(<span class="at">dtype =</span> <span class="fu">torch_cfloat</span>()))</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    F[k <span class="sc">+</span> <span class="dv">1</span>] <span class="ot">&lt;-</span> dot</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  F</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="dft-vectorized" class="level3" data-number="27.4.2">
+<h3 data-number="27.4.2" class="anchored" data-anchor-id="dft-vectorized"><span class="header-section-number">27.4.2</span> DFT, vectorized</h3>
+<p>Next, we went on to replace the loop by arranging the basis vectors in a matrix.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>dft_vec <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  n_samples <span class="ot">&lt;-</span> <span class="fu">length</span>(x)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="fu">torch_arange</span>(<span class="dv">0</span>, n_samples <span class="sc">-</span> <span class="dv">1</span>)<span class="sc">$</span><span class="fu">unsqueeze</span>(<span class="dv">1</span>)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  k <span class="ot">&lt;-</span> <span class="fu">torch_arange</span>(<span class="dv">0</span>, n_samples <span class="sc">-</span> <span class="dv">1</span>)<span class="sc">$</span><span class="fu">unsqueeze</span>(<span class="dv">2</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  mat_k_m <span class="ot">&lt;-</span> <span class="fu">torch_exp</span>(<span class="sc">-</span>1i <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> pi<span class="sc">/</span>n_samples <span class="sc">*</span> k <span class="sc">*</span> n)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">torch_matmul</span>(mat_k_m, x<span class="sc">$</span><span class="fu">to</span>(<span class="at">dtype =</span> <span class="fu">torch_cfloat</span>()))</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="radix-2-decimation-in-time-fft-recursive" class="level3" data-number="27.4.3">
+<h3 data-number="27.4.3" class="anchored" data-anchor-id="radix-2-decimation-in-time-fft-recursive"><span class="header-section-number">27.4.3</span> Radix-2 decimation in time FFT, recursive</h3>
+<p>Just like we did for the DFT algorithm per se, we can straightforwardly, by-specification implement the FFT. This time, the logically-imposed design is recursive, not iterative. In each call to <code>fft()</code>, the input is split into even and odd indices, respective half-size FFTs are computed, and the two sets of outputs are combined as required.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># straightforward, recursive implementation of the FFT.</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Expects input size to be a power of 2.</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>fft <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  n_samples <span class="ot">&lt;-</span> <span class="fu">length</span>(x)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (n_samples <span class="sc">==</span> <span class="dv">1</span>) {</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(x)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  X_upper <span class="ot">&lt;-</span> <span class="fu">fft</span>(x[<span class="dv">1</span><span class="sc">:</span>n_samples<span class="sc">:</span><span class="dv">2</span>])</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  X_lower <span class="ot">&lt;-</span> <span class="fu">fft</span>(x[<span class="dv">2</span><span class="sc">:</span>n_samples<span class="sc">:</span><span class="dv">2</span>])</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  w_k <span class="ot">&lt;-</span> <span class="fu">torch_exp</span>(</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="sc">-</span><span class="dv">2</span> <span class="sc">*</span> pi <span class="sc">*</span> <span class="fu">torch_complex</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="sc">*</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>      <span class="fu">torch_arange</span>(<span class="dv">0</span>, n_samples <span class="sc">/</span> <span class="dv">2</span> <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">/</span> n_samples</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">torch_cat</span>(<span class="fu">list</span>(</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    X_upper <span class="sc">+</span> w_k <span class="sc">*</span> X_lower,</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    X_upper <span class="sc">-</span> w_k <span class="sc">*</span> X_lower</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>  ))</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>This function expects input size to equal a power of two.</p>
+</section>
+<section id="radix-2-decimation-in-time-fft-by-matrix-factorization" class="level3" data-number="27.4.4">
+<h3 data-number="27.4.4" class="anchored" data-anchor-id="radix-2-decimation-in-time-fft-by-matrix-factorization"><span class="header-section-number">27.4.4</span> Radix-2 decimation in time FFT by matrix factorization</h3>
+<p>Next, we implement the matrix-factorization strategy described above. <code>fft_vec()</code> is a generalization of the logic spelt out in Brad Osgood’s wonderful book on the Fourier Transform (<span class="citation" data-cites="Osgood">Osgood (<a href="references.html#ref-Osgood" role="doc-biblioref">2019</a>)</span>).</p>
+<p>We sort the input tensor (a single time), apply successive block matrices of doubled-in-size “butterflies”, and multiply the result with a single butterfly matrix of size matching the number of inputs.</p>
+<p>The sorting may conveniently be done using <code>bitrevorder()</code>, a function provided by the R package <code>gsignal</code>.</p>
+<p>In the loop, you can see how the butterfly matrices are built: They consist of a combination of identity matrices with diagonal matrices holding the <span class="math inline">\(w^k_N\)</span>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(torch)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gsignal)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># requirements: input length is at least 4, and a power of 2</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>fft_matrix <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># perform sorting just once, a the beginning</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="fu">torch_tensor</span>(</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bitrevorder</span>(<span class="fu">as.numeric</span>(x)),</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">dtype =</span> <span class="fu">torch_cfloat</span>()</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  n_samples <span class="ot">&lt;-</span> <span class="fu">length</span>(x)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  <span class="co"># smallest butterfly matrix, needed for all valid inputs</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  B2 <span class="ot">&lt;-</span> <span class="fu">torch_tensor</span>(</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>),</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">dtype =</span> <span class="fu">torch_cfloat</span>()</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>  )<span class="sc">$</span><span class="fu">view</span>(<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>))</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>  B2_block <span class="ot">&lt;-</span> <span class="fu">torch_block_diag</span>(</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>    B2<span class="sc">$</span><span class="st">`</span><span class="at">repeat</span><span class="st">`</span>(<span class="fu">c</span>(n_samples <span class="sc">/</span> <span class="dv">2</span>, <span class="dv">1</span>))<span class="sc">$</span><span class="fu">split</span>(<span class="dv">2</span>)</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>  acc <span class="ot">&lt;-</span> <span class="fu">torch_matmul</span>(B2_block, x)</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>  <span class="co"># iterative implementation then starts with B4</span></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="dv">4</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>  <span class="cf">while</span> (n <span class="sc">&lt;=</span> n_samples) {</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>    <span class="co"># build up current butterfly matrix</span></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>    I <span class="ot">&lt;-</span> <span class="fu">torch_eye</span>(n <span class="sc">/</span> <span class="dv">2</span>)</span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>    O <span class="ot">&lt;-</span> <span class="fu">torch_diag</span>(</span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>      <span class="fu">torch_exp</span>(</span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>        <span class="sc">-</span>1i <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> pi <span class="sc">*</span></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>          <span class="fu">torch_arange</span>(<span class="dv">0</span>, n <span class="sc">/</span> <span class="dv">2</span> <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">/</span> (n <span class="sc">/</span> <span class="dv">2</span> <span class="sc">*</span> <span class="dv">2</span>)</span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>    B <span class="ot">&lt;-</span> <span class="fu">torch_cat</span>(<span class="fu">list</span>(</span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>      <span class="fu">torch_cat</span>(<span class="fu">list</span>(I, O), <span class="at">dim =</span> <span class="dv">2</span>),</span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a>      <span class="fu">torch_cat</span>(<span class="fu">list</span>(I, <span class="sc">-</span>O), <span class="at">dim =</span> <span class="dv">2</span>)</span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a>    ), <span class="at">dim =</span> <span class="dv">1</span>)</span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a>    <span class="co"># in the final multiplication,</span></span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a>    <span class="co"># B directly matches input length</span></span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (n <span class="sc">==</span> n_samples) {</span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a>      <span class="fu">return</span>(<span class="fu">torch_matmul</span>(B, acc))</span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a>    <span class="co"># create block-diagonal matrix from butterflies</span></span>
+<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a>    <span class="co"># at each iteration,</span></span>
+<span id="cb4-51"><a href="#cb4-51" aria-hidden="true" tabindex="-1"></a>    <span class="co"># we need to replicate B {n_samples/rank(B) times}</span></span>
+<span id="cb4-52"><a href="#cb4-52" aria-hidden="true" tabindex="-1"></a>    <span class="co"># this is achieved by first repeating B row-wise,</span></span>
+<span id="cb4-53"><a href="#cb4-53" aria-hidden="true" tabindex="-1"></a>    <span class="co"># then splitting up into rank(n) parts)</span></span>
+<span id="cb4-54"><a href="#cb4-54" aria-hidden="true" tabindex="-1"></a>    B_block <span class="ot">&lt;-</span> <span class="fu">torch_block_diag</span>(</span>
+<span id="cb4-55"><a href="#cb4-55" aria-hidden="true" tabindex="-1"></a>      B<span class="sc">$</span><span class="st">`</span><span class="at">repeat</span><span class="st">`</span>(<span class="fu">c</span>(n_samples <span class="sc">/</span> n, <span class="dv">1</span>))<span class="sc">$</span><span class="fu">split</span>(n)</span>
+<span id="cb4-56"><a href="#cb4-56" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb4-57"><a href="#cb4-57" aria-hidden="true" tabindex="-1"></a>    acc <span class="ot">&lt;-</span> <span class="fu">torch_matmul</span>(B_block, acc)</span>
+<span id="cb4-58"><a href="#cb4-58" aria-hidden="true" tabindex="-1"></a>    n <span class="ot">&lt;-</span> n <span class="sc">*</span> <span class="dv">2</span></span>
+<span id="cb4-59"><a href="#cb4-59" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb4-60"><a href="#cb4-60" aria-hidden="true" tabindex="-1"></a>  acc</span>
+<span id="cb4-61"><a href="#cb4-61" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="radix-2-decimation-in-time-fft-optimized-for-vectorization" class="level3" data-number="27.4.5">
+<h3 data-number="27.4.5" class="anchored" data-anchor-id="radix-2-decimation-in-time-fft-optimized-for-vectorization"><span class="header-section-number">27.4.5</span> Radix-2 decimation in time FFT, optimized for vectorization</h3>
+<p>Finally, let me present one more implementation. It is a literal translation of the Python code published by <a href="http://jakevdp.github.io/blog/2013/08/28/understanding-the-fft/#Vectorized-Numpy-Version">Jake van der Plas</a> on his blog. Although it looks more involved than the recursive <code>fft()</code> above, it really implements the same algorithm, all while making use of vectorization as much as possible. In other words, it is to <code>fft()</code> what <code>dft_vec()</code> is to <code>dft()</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># torch translation of</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co"># http://jakevdp.github.io/blog/2013/08/28/</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># understanding-the-fft/#Vectorized-Numpy-Version</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>fft_vec <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  n_samples <span class="ot">&lt;-</span> <span class="fu">length</span>(x)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># could be chosen higher for performance reasons</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  n_min <span class="ot">&lt;-</span> <span class="dv">2</span> </span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Perform an O[N^2] DFT on all length-N_min </span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># sub-problems at once</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="fu">torch_arange</span>(<span class="dv">0</span>, n_min <span class="sc">-</span> <span class="dv">1</span>)<span class="sc">$</span><span class="fu">unsqueeze</span>(<span class="dv">1</span>)</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>  k <span class="ot">&lt;-</span> <span class="fu">torch_arange</span>(<span class="dv">0</span>, n_min <span class="sc">-</span> <span class="dv">1</span>)<span class="sc">$</span><span class="fu">unsqueeze</span>(<span class="dv">2</span>)</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  <span class="co"># by starting with one (vectorized-by-matmul)</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>  <span class="co"># "classic DFT" (instead of a block matrix of B_mins),</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>  <span class="co"># we don't need the bitrevorder step</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>  mat_k_m <span class="ot">&lt;-</span> <span class="fu">torch_exp</span>(<span class="sc">-</span>1i <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> pi <span class="sc">/</span> n_min <span class="sc">*</span> k <span class="sc">*</span> n)</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>  F <span class="ot">&lt;-</span> <span class="fu">torch_matmul</span>(</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    mat_k_m,</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>    x<span class="sc">$</span><span class="fu">to</span>(<span class="at">dtype =</span> <span class="fu">torch_cfloat</span>())<span class="sc">$</span><span class="fu">reshape</span>(<span class="fu">list</span>(n_min, <span class="sc">-</span><span class="dv">1</span>))</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>  <span class="co"># build-up each level of the recursive calculation</span></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>  <span class="co"># all at once</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>  <span class="cf">while</span> (<span class="fu">dim</span>(F)[<span class="dv">1</span>] <span class="sc">&lt;</span> n_samples) {</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>    F_first <span class="ot">&lt;-</span> F[, <span class="dv">1</span><span class="sc">:</span>(<span class="fu">dim</span>(F)[<span class="dv">2</span>] <span class="sc">/</span> <span class="dv">2</span>)]</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>    F_second <span class="ot">&lt;-</span> F[, (<span class="fu">dim</span>(F)[<span class="dv">2</span>] <span class="sc">/</span> <span class="dv">2</span> <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span><span class="fu">dim</span>(F)[<span class="dv">2</span>]]</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>    <span class="co"># only need first half of w_ks</span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>    w_k <span class="ot">&lt;-</span> <span class="fu">torch_exp</span>(</span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>      <span class="sc">-</span>1i <span class="sc">*</span> pi <span class="sc">*</span></span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>        <span class="fu">torch_arange</span>(<span class="dv">0</span>, <span class="fu">dim</span>(F)[<span class="dv">1</span>] <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">/</span> <span class="fu">dim</span>(F)[<span class="dv">1</span>]</span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>    )<span class="sc">$</span><span class="fu">unsqueeze</span>(<span class="dv">2</span>)</span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>    F <span class="ot">&lt;-</span> <span class="fu">torch_vstack</span>(<span class="fu">list</span>(</span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>      F_first <span class="sc">+</span> w_k <span class="sc">*</span> F_second,</span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>      F_first <span class="sc">-</span> w_k <span class="sc">*</span> F_second</span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>    ))</span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>    <span class="co"># w_k * F_second multiplies both at once (column-wise)</span></span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>  F<span class="sc">$</span><span class="fu">ravel</span>()</span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="checking-against-torch_fft_fft" class="level3" data-number="27.4.6">
+<h3 data-number="27.4.6" class="anchored" data-anchor-id="checking-against-torch_fft_fft"><span class="header-section-number">27.4.6</span> Checking against <code>torch_fft_fft()</code></h3>
+<p>Now, before we compare those five functions performance-wise, let’s check whether they yield the same results as <code>torch_fft_fft()</code>. We don’t expect identity over a large number of decimal places; but it will be good to know about eventual differences in accuracy between the different implementations.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">torch_randn</span>(<span class="dv">2</span><span class="sc">^</span><span class="dv">13</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>atol <span class="ot">&lt;-</span> <span class="fl">1e-4</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>y_ref <span class="ot">&lt;-</span> <span class="fu">torch_fft_fft</span>(x)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>y_dft <span class="ot">&lt;-</span> <span class="fu">dft</span>(x)</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>y_dft_vec <span class="ot">&lt;-</span> <span class="fu">dft_vec</span>(x)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>y_fft <span class="ot">&lt;-</span> <span class="fu">fft</span>(x)</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>y_fft_vec <span class="ot">&lt;-</span> <span class="fu">fft_vec</span>(x)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>y_fft_matrix <span class="ot">&lt;-</span> <span class="fu">fft_matrix</span>(x)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="fu">torch_allclose</span>(y_dft, y_ref, <span class="at">atol =</span> atol)</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="fu">torch_allclose</span>(y_dft_vec, y_ref, <span class="at">atol =</span> atol)</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="fu">torch_allclose</span>(y_fft, y_ref, <span class="at">atol =</span> atol)</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="fu">torch_allclose</span>(y_fft_vec, y_ref, <span class="at">atol =</span> atol)</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="fu">torch_allclose</span>(y_fft_matrix, y_ref, <span class="at">atol =</span> atol)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>[1] FALSE
+[1] FALSE
+[1] TRUE
+[1] TRUE
+[1] TRUE</code></pre>
+<p>Reassuringly, the FFT implementations all seem sufficiently accurate.</p>
+</section>
+<section id="comparing-performance" class="level3" data-number="27.4.7">
+<h3 data-number="27.4.7" class="anchored" data-anchor-id="comparing-performance"><span class="header-section-number">27.4.7</span> Comparing performance</h3>
+<p>To assess relative performance, we again use <code>bench::mark()</code>, with twenty iterations per function (<a href="#fig-fft-perf">fig.&nbsp;<span>27.1</span></a>).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">777</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">torch_manual_seed</span>(<span class="dv">777</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(bench)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">mark</span>(<span class="fu">dft</span>(x),</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dft_vec</span>(x),</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fft</span>(x),</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fft_vec</span>(x),</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fft_matrix</span>(x),</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">torch_fft_fft</span>(x),</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">iterations =</span> <span class="dv">20</span>,</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">check =</span> <span class="cn">FALSE</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>res <span class="sc">%&gt;%</span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">expression =</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>      forcats<span class="sc">::</span><span class="fu">fct_reorder</span>(<span class="fu">as.character</span>(expression),</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>        min,</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>        <span class="at">.desc =</span> <span class="cn">TRUE</span></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as_bench_mark</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autoplot</span>(<span class="at">type =</span> <span class="st">"ridge"</span>) <span class="sc">+</span> <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-fft-perf" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/fft-perf.png" class="quarto-discovered-preview-image img-fluid figure-img" alt="Density plots of execution times, one row per FFT implementation. See main text for details."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;27.1: Benchmarking various FFT and DFT implementations (see text). Also includes <code>torch_fft_fft()</code> for reference.</figcaption><p></p>
+</figure>
+</div>
+<p>Unsurprisingly, none of the implementations comes close to <code>torch_fft_fft()</code>. Intriguingly, though, we see enormous differences in execution time between our manual implementations. There is an important insight to be had. Algorithmic properties are like Platonic ideas: pure and noble in theory, but often, hard to enliven in the lowlands of everyday life. Here, the hard facts of reality concern the defining features of the software stack one is using, and in particular, the characteristics of the programming language involved. Let me elaborate.</p>
+<p>In <code>torch</code> as well as in R, the language, vectorized operations are much more efficient than iteration (let alone recursion). In that light, we can make sense of the results like so:</p>
+<ul>
+<li><code>dft()</code> and <code>fft()</code>, the straightforward realizations, are slowest, since they don’t use vectorized operations. Among those two, <code>fft()</code>, which – in theory – should be superior, is severely punished for relying on recursion, whose use is strongly discouraged in R.</li>
+<li>Both vectorized implementations, <code>dft_vec()</code> and <code>fft_vec()</code>, perform decidedly better than their un-vectorized counterparts. Among these, <code>fft_vec()</code> is a lot faster than <code>dft_vec()</code>, which is exactly what we’d like to see.</li>
+<li>Given its conceptual and aesthetic appeal, the outcome for <code>fft_matrix()</code> is a bit disappointing.</li>
+</ul>
+<p>Inspired by wishful thinking, is there anything we could do?</p>
+</section>
+<section id="making-use-of-just-in-time-jit-compilation" class="level3" data-number="27.4.8">
+<h3 data-number="27.4.8" class="anchored" data-anchor-id="making-use-of-just-in-time-jit-compilation"><span class="header-section-number">27.4.8</span> Making use of Just-in-Time (JIT) compilation</h3>
+<p>We can try. In <code>torch</code>, a functionality named Just-in-Time (JIT) compilation allows us to <em>trace</em> a function, or a model, to obtain a highly optimized graph representation. This capability is useful in a number of ways: to reduce execution time, evidently; but also if, for example, you’d like to deploy a model (trained in R) in an environment that does not have R installed. If you’re interested, please see the <a href="https://github.com/mlverse/torch/blob/main/vignettes/torchscript.Rmd">vignette</a>, as well as a dedicated <a href="https://blogs.rstudio.com/ai/posts/2021-08-10-jit-trace-module/">blog post</a>. Here, we’ll just directly put JIT compilation to practical use.</p>
+<p>All we have to do is call a function, <code>jit_trace()</code>, with a dummy tensor, whose shape has to match the shape of future intended inputs. We want to do this for the two most promising FFT implementations, <code>fft_vec()</code> and <code>fft_matrix()</code>, as well as <code>torch</code>’s own <code>torch_fft_fft()</code>. The one thing to be aware of is that, should we think the improvement is worth it, we will need to trace the function for all input shapes we’re interested in. (Considering that our implementations expect input size to be a power of two, that wouldn’t be too much of a problem.)</p>
+<p>Above, the input size we used for benchmarking amounted to 2^13, so this is what we’ll use for tracing, too. Here, first, we run <code>jit_trace()</code> for <code>fft_vec()</code> and <code>torch_fft_fft()</code>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>x_trace <span class="ot">&lt;-</span> <span class="fu">torch_randn</span>(<span class="dv">2</span><span class="sc">^</span><span class="dv">13</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>fft_vec_jit <span class="ot">&lt;-</span> <span class="fu">jit_trace</span>(fft_vec, x_trace)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>fft_fft_jit <span class="ot">&lt;-</span> <span class="fu">jit_trace</span>(torch_fft_fft, x_trace)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The case of <code>fft_matrix()</code>, however, is a bit special: Inside, we’re calling <code>bitrevorder()</code>, a function that should not be part of the <code>torch</code> graph. A workaround, however, is quickly found: Just move that part of the logic outside the function – it scarcely contributes to execution time, anyway. The redefined function now looks like this:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>fft_matrix_for_jit <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> x<span class="sc">$</span><span class="fu">to</span>(<span class="at">dtype =</span> <span class="fu">torch_cfloat</span>())</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  n_samples <span class="ot">&lt;-</span> <span class="fu">length</span>(x)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># smallest butterfly matrix, needed for all valid inputs</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  B2 <span class="ot">&lt;-</span> <span class="fu">torch_tensor</span>(</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>),</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">dtype =</span> <span class="fu">torch_cfloat</span>()</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>  )<span class="sc">$</span><span class="fu">view</span>(<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>))</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>  B2_block <span class="ot">&lt;-</span> <span class="fu">torch_block_diag</span>(</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    B2<span class="sc">$</span><span class="st">`</span><span class="at">repeat</span><span class="st">`</span>(<span class="fu">c</span>(n_samples <span class="sc">/</span> <span class="dv">2</span>, <span class="dv">1</span>))<span class="sc">$</span><span class="fu">split</span>(<span class="dv">2</span>)</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>  acc <span class="ot">&lt;-</span> <span class="fu">torch_matmul</span>(B2_block, x)</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>  <span class="co"># iterative implementation then starts with B4</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="dv">4</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>  <span class="cf">while</span> (n <span class="sc">&lt;=</span> n_samples) {</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>    <span class="co"># build up current butterfly matrix</span></span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>    I <span class="ot">&lt;-</span> <span class="fu">torch_eye</span>(n <span class="sc">/</span> <span class="dv">2</span>)</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>    O <span class="ot">&lt;-</span> <span class="fu">torch_diag</span>(</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>      <span class="fu">torch_exp</span>(</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>        <span class="sc">-</span>1i <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> pi <span class="sc">*</span></span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>          <span class="fu">torch_arange</span>(<span class="dv">0</span>, n <span class="sc">/</span> <span class="dv">2</span> <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">/</span> (n <span class="sc">/</span> <span class="dv">2</span> <span class="sc">*</span> <span class="dv">2</span>)</span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a>    B <span class="ot">&lt;-</span> <span class="fu">torch_cat</span>(<span class="fu">list</span>(</span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a>      <span class="fu">torch_cat</span>(<span class="fu">list</span>(I, O), <span class="at">dim =</span> <span class="dv">2</span>),</span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a>      <span class="fu">torch_cat</span>(<span class="fu">list</span>(I, <span class="sc">-</span>O), <span class="at">dim =</span> <span class="dv">2</span>)</span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a>    ), <span class="at">dim =</span> <span class="dv">1</span>)</span>
+<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a>    <span class="co"># in the final multiplication,</span></span>
+<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a>    <span class="co"># B directly matches input length</span></span>
+<span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (n <span class="sc">==</span> n_samples) {</span>
+<span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a>      <span class="fu">return</span>(<span class="fu">torch_matmul</span>(B, acc))</span>
+<span id="cb10-38"><a href="#cb10-38" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb10-39"><a href="#cb10-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-40"><a href="#cb10-40" aria-hidden="true" tabindex="-1"></a>    <span class="co"># create block-diagonal matrix from butterflies</span></span>
+<span id="cb10-41"><a href="#cb10-41" aria-hidden="true" tabindex="-1"></a>    <span class="co"># at each iteration,</span></span>
+<span id="cb10-42"><a href="#cb10-42" aria-hidden="true" tabindex="-1"></a>    <span class="co"># we need to replicate B {n_samples/rank(B) times}</span></span>
+<span id="cb10-43"><a href="#cb10-43" aria-hidden="true" tabindex="-1"></a>    <span class="co"># this is achieved by first repeating B row-wise,</span></span>
+<span id="cb10-44"><a href="#cb10-44" aria-hidden="true" tabindex="-1"></a>    <span class="co"># then splitting up into rank(n) parts)</span></span>
+<span id="cb10-45"><a href="#cb10-45" aria-hidden="true" tabindex="-1"></a>    B_block <span class="ot">&lt;-</span> <span class="fu">torch_block_diag</span>(</span>
+<span id="cb10-46"><a href="#cb10-46" aria-hidden="true" tabindex="-1"></a>      B<span class="sc">$</span><span class="st">`</span><span class="at">repeat</span><span class="st">`</span>(<span class="fu">c</span>(n_samples <span class="sc">/</span> n, <span class="dv">1</span>))<span class="sc">$</span><span class="fu">split</span>(n)</span>
+<span id="cb10-47"><a href="#cb10-47" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb10-48"><a href="#cb10-48" aria-hidden="true" tabindex="-1"></a>    acc <span class="ot">&lt;-</span> <span class="fu">torch_matmul</span>(B_block, acc)</span>
+<span id="cb10-49"><a href="#cb10-49" aria-hidden="true" tabindex="-1"></a>    n <span class="ot">&lt;-</span> n <span class="sc">*</span> <span class="dv">2</span></span>
+<span id="cb10-50"><a href="#cb10-50" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb10-51"><a href="#cb10-51" aria-hidden="true" tabindex="-1"></a>  acc</span>
+<span id="cb10-52"><a href="#cb10-52" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We trace it with pre-sorted input:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>fft_matrix_jit <span class="ot">&lt;-</span> <span class="fu">jit_trace</span>(</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  fft_matrix_for_jit,</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">torch_tensor</span>(</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bitrevorder</span>(<span class="fu">as.numeric</span>(x_trace)),</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">dtype =</span> <span class="fu">torch_cfloat</span>()</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>In benchmarking, we call <code>fft_matrix_jit()</code> with a pre-sorted tensor, as well. Here, then, is a comparison of <code>fft_vec(),</code> <code>fft_matrix()</code>, <code>torch_fft_fft()</code>, and their respective optimized versions (<a href="#fig-fft-perf-jit">fig.&nbsp;<span>27.2</span></a>):</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>x_rev <span class="ot">&lt;-</span> <span class="fu">torch_tensor</span>(</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bitrevorder</span>(</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">as.numeric</span>(x_trace)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">dtype =</span> <span class="fu">torch_cfloat</span>()</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">mark</span>(<span class="fu">fft_vec</span>(x),</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fft_matrix</span>(x),</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">torch_fft_fft</span>(x),</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fft_vec_jit</span>(x),</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fft_matrix_jit</span>(x_rev),</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fft_fft_jit</span>(x),</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">iterations =</span> <span class="dv">20</span>,</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">check =</span> <span class="cn">FALSE</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>res <span class="sc">%&gt;%</span></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">expression =</span> forcats<span class="sc">::</span><span class="fu">fct_reorder</span>(</span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>      <span class="fu">as.character</span>(expression),</span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>      min,</span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>      <span class="at">.desc =</span> <span class="cn">TRUE</span></span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as_bench_mark</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autoplot</span>(<span class="at">type =</span> <span class="st">"ridge"</span>) <span class="sc">+</span> <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-fft-perf-jit" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/fft-perf-jit.png" class="img-fluid figure-img" alt="Density plots of execution times, one row per FFT implementation. See main text for details."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;27.2: Exploring the effect of Just-in-Time Compilation (JIT) on the performance of <code>fft_vec(),</code> <code>fft_matrix()</code>, and <code>torch_fft_fft()</code>.</figcaption><p></p>
+</figure>
+</div>
+<p>Two things, I’d say, are remarkable about this result. First, each of the three implementations benefits from getting JIT-compiled, even <code>torch_fft_fft()</code>.</p>
+<p>Second, there is one that profits <em>a lot</em>: namely, <code>fft_vec()</code>. In its compiled version, it is nearly as fast as <code>torch_fft_fft()</code> – a function that, remember, has all calculations done in highly optimized C++ code. This again underlines the enormous impact “linguistic fit” has on final performance outcomes.</p>
+<p>By now, we’ve learned a lot about the Discrete Fourier Transform, including how to implement it in an efficient way. With all that knowledge, we should feel comfortable enough making direct use of <code>torch_fft_ftt()</code>. This is exactly what we’ll do in the next – and final – chapter: We’ll complement classic Fourier Analysis with its younger counterpart, <em>wavelets</em>.</p>
+
+
+<div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
+<div id="ref-Osgood" class="csl-entry" role="listitem">
+Osgood, Brad. 2019. <em>Lectures on the Fourier Transform and Its Applications</em>. American Mathematical Society.
+</div>
+</div>
+</section>
+</section>
+<section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn1"><p>Note that now we have a scalar, not a vector.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./fourier_transform_dft.html" class="pagination-link">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Exploring the Discrete Fourier Transform (DFT)</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./wavelets.html" class="pagination-link">
+        <span class="nav-page-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Wavelets</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+</body></html>

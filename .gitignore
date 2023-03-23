@@ -7,7 +7,6 @@
 BookProposalForm.odt
 index.log
 tmp
-*.html
 _book
 /.quarto/
 *_cache/

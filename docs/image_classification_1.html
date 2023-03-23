@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-99.9.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Deep Learning and Scientific Computing with R torch - 15&nbsp; A first go at image classification</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./overfitting.html" rel="next">
+<link href="./training_with_luz.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./dl_overview.html">Deep learning with torch</a></li><li class="breadcrumb-item"><a href="./image_classification_1.html"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">A first go at image classification</span></a></li></ol></nav>
+      <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+      </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Deep Learning and Scientific Computing with R torch</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">Getting familiar with torch</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./basics_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Overview</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./what_is_torch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">On <code>torch</code>, and how to get it</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./tensors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Tensors</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Autograd</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optim_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Function minimization with <em>autograd</em></span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./network_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">A neural network from scratch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./modules.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Modules</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optimizers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Optimizers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./loss_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Loss functions</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optim_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Function minimization with L-BFGS</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./network_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Modularizing the neural network</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">Deep learning with torch</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./dl_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Overview</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Loading data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./training_with_luz.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Training with luz</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./image_classification_1.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">A first go at image classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./overfitting.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Making models generalize</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./training_efficiency.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Speeding up training</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./image_classification_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Image classification, take two: Improving performance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./image_segmentation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Image segmentation</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./tabular_data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Tabular data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Time series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./audio_classification.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Audio classification</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">Other things to do with torch: Matrices, Fourier Transform, and Wavelets</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./other_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Overview</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./matrix_computations_leastsquares.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Matrix computations: Least-squares problems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./matrix_computations_convolution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Matrix computations: Convolution</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./fourier_transform_dft.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Exploring the Discrete Fourier Transform (DFT)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./fourier_transform_fft.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">The Fast Fourier Transform (FFT)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wavelets.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Wavelets</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#what-does-it-take-to-classify-an-image" id="toc-what-does-it-take-to-classify-an-image" class="nav-link active" data-scroll-target="#what-does-it-take-to-classify-an-image"><span class="header-section-number">15.1</span> What does it take to classify an image?</a></li>
+  <li><a href="#neural-networks-for-feature-detection-and-feature-emergence" id="toc-neural-networks-for-feature-detection-and-feature-emergence" class="nav-link" data-scroll-target="#neural-networks-for-feature-detection-and-feature-emergence"><span class="header-section-number">15.2</span> Neural networks for feature detection and feature emergence</a>
+  <ul class="collapse">
+  <li><a href="#detecting-low-level-features-with-cross-correlation" id="toc-detecting-low-level-features-with-cross-correlation" class="nav-link" data-scroll-target="#detecting-low-level-features-with-cross-correlation"><span class="header-section-number">15.2.1</span> Detecting low-level features with cross-correlation</a></li>
+  <li><a href="#build-up-feature-hierarchies" id="toc-build-up-feature-hierarchies" class="nav-link" data-scroll-target="#build-up-feature-hierarchies"><span class="header-section-number">15.2.2</span> Build up feature hierarchies</a></li>
+  </ul></li>
+  <li><a href="#classification-on-tiny-imagenet" id="toc-classification-on-tiny-imagenet" class="nav-link" data-scroll-target="#classification-on-tiny-imagenet"><span class="header-section-number">15.3</span> Classification on Tiny Imagenet</a>
+  <ul class="collapse">
+  <li><a href="#data-pre-processing" id="toc-data-pre-processing" class="nav-link" data-scroll-target="#data-pre-processing"><span class="header-section-number">15.3.1</span> Data pre-processing</a></li>
+  <li><a href="#image-classification-from-scratch" id="toc-image-classification-from-scratch" class="nav-link" data-scroll-target="#image-classification-from-scratch"><span class="header-section-number">15.3.2</span> Image classification from scratch</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span id="sec:image-classification-1" class="quarto-section-identifier"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">A first go at image classification</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<section id="what-does-it-take-to-classify-an-image" class="level2" data-number="15.1">
+<h2 data-number="15.1" class="anchored" data-anchor-id="what-does-it-take-to-classify-an-image"><span class="header-section-number">15.1</span> What does it take to classify an image?</h2>
+<p>Think about how we, as human beings, can say “that’s a cat”, or: “this is a dog”. No conscious processing is required. (Usually, that is.)</p>
+<p>Why? The neuroscience, and cognitive psychology, involved are definitely out of scope for this book; but on a high level, we can assume that there are at least two prerequisites: First, that our visual system be able to build up complex representations out of lower-level ones, and second, that we have a set of concepts available we can map those high-level representations to. Presumably, then, an algorithm expected to do the same thing needs to be endowed with these same capabilities.</p>
+<p>In the context of this chapter, dedicated to image classification, the second prerequisite is satisfied gratuitously. Classification being a variant of supervised machine learning, the concepts are given by means of the targets. The first, however, is all-important. We can again distinguish two components: the capability to detect low-level features, and that to successively compose them into higher-level ones.</p>
+<p>Take a simple example. What would be required to identify a rectangle? A rectangle consists of edges: straight-ish borders of sort where something in the visual impression (color, for example) changes. To start with, then, the algorithm would have to be able to identify a single edge. That “edge extractor”, as we might call it, is going to mark all four edges in the image. In this case, no further composition of features is needed; we can directly infer the concept.</p>
+<p>On the other hand, assume the image were showing a house built of bricks. Then, there would be many rectangles, together forming a wall of the house; another rectangle, the door; and a few further ones, the windows. Maybe there’d be a different arrangement of edges, triangle-shaped, the roof. Meaning, an edge detector is not enough: We also need a “rectangle detector”, a “triangle detector”, a “wall detector”, a “roof detector” … and so on. Evidently, these detectors can’t all be programmed up front. They’ll have to be emergent properties of the algorithm: the neural network, in our case.</p>
+</section>
+<section id="neural-networks-for-feature-detection-and-feature-emergence" class="level2" data-number="15.2">
+<h2 data-number="15.2" class="anchored" data-anchor-id="neural-networks-for-feature-detection-and-feature-emergence"><span class="header-section-number">15.2</span> Neural networks for feature detection and feature emergence</h2>
+<p>The way we’ve spelled out the requirements, a neural network for image classification needs to (1) be able to detect features, and (2) build up a hierarchy of such. Networks being networks, we can safely assume that (1) will be taken care of by a specialized layer (module), while (2) will be made possible by chaining several layers.</p>
+<section id="detecting-low-level-features-with-cross-correlation" class="level3" data-number="15.2.1">
+<h3 data-number="15.2.1" class="anchored" data-anchor-id="detecting-low-level-features-with-cross-correlation"><span class="header-section-number">15.2.1</span> Detecting low-level features with cross-correlation</h3>
+<p>This chapter is about “convolutional” neural networks; the specialized module in question is the “convolutional” one. Why, then, am I talking about cross-correlation? It’s because what neural-network people refer to as <em>convolution</em>, technically is <em>cross-correlation</em>. (Don’t worry – I’ll be making the distinction just here, in the conceptual introduction; afterwards I’ll be saying “convolution”, just like everyone else.)</p>
+<p>So why am I insisting? It is for two reasons. First, this book actually <em>has</em> a chapter on convolution – the “real one”; it figures in part three right between matrix operations and the Discrete Fourier Transform. Second, while in a formal sense the difference may be small, semantically as well as in terms of mathematical status, convolution and cross-correlation are decidedly distinct. In broad strokes:</p>
+<p>Convolution may well be the most fundamental operation in all of signal processing, fundamental in the way addition and multiplication are. It can act as a <em>filter</em>, a signal-space transformation intended to achieve a desired result. For example, a moving average filter can be programmed as a convolution. So can, however, something quite the opposite: a filter that emphasizes differences. (An edge enhancer would be an example of the latter.)</p>
+<p>Cross-correlation, in contrast, is more specialized. It <em>finds</em> things, or put differently: It spots similarities. This is what is needed in image recognition. To demonstrate how it works, we start in a single dimension.</p>
+<section id="cross-correlation-in-one-dimension" class="level4" data-number="15.2.1.1">
+<h4 data-number="15.2.1.1" class="anchored" data-anchor-id="cross-correlation-in-one-dimension"><span class="header-section-number">15.2.1.1</span> Cross-correlation in one dimension</h4>
+<p>Assume we have a signal – a univariate time series – that looks like this: <code>0,1,1,1,-1,0,-1,-1,1,1,1,-1</code>. We want to find locations where a <em>one</em> occurs three times in a row. To that end, we make use of a filter that, too, has three ones in a row: <code>1,1,1</code>.</p>
+<p>That filter, also called a <em>kernel</em>, is going to slide over the input sequence, producing an output value at every location. To be precise: The output value in question will be mapped to the <em>input value co-located with the kernel’s central value</em>. How, then, can we obtain an output for the very first input value, which has no way of being mapped to the center of the kernel? In order for this to work, the input sequence is padded with zeroes: one in front, and one at the end. The new signal looks like this: <code>0,0,1,1,1,-1,0,-1,-1,1,1,1,-1,0</code> .</p>
+<p>Now, we have the kernel sliding over the signal. Like so:</p>
+<pre><code>0,0,1,1,1,-1,0,-1,-1,1,1,1,-1,0
+1,1,1
+
+0,0,1,1,1,-1,0,-1,-1,1,1,1,-1,0
+   1,1,1
+
+0,0,1,1,1,-1,0,-1,-1,1,1,1,-1,0
+      1,1, 1</code></pre>
+<p>And so on.</p>
+<p>At every position, products are computed between the mapped input and kernel values, and then, those products are added up, to yield the output value at the central position. For example, this is what gets computed at the very first matching: <code>0*1 + 0*1 + 1*1 = 1</code>. Appending the outputs, we get a new sequence: <code>1,2,3,1,0,-2,-2,-1,1,3,1,0</code> .</p>
+<p>How does this help in finding three consecutive ones? Well, a three can only result when the kernel has found such a location. Thus, with that choice of kernel, we take every occurrence of <code>3</code> in the output as the center of the target sequence we’re looking for.</p>
+</section>
+<section id="cross-correlation-in-two-dimensions" class="level4" data-number="15.2.1.2">
+<h4 data-number="15.2.1.2" class="anchored" data-anchor-id="cross-correlation-in-two-dimensions"><span class="header-section-number">15.2.1.2</span> Cross-correlation in two dimensions</h4>
+<p>This chapter is about images; how does that logic carry over to two dimensions?</p>
+<p>Everything works just the same; it’s just that now, the input signal extends over two dimensions, and the kernel is two-dimensional, as well. Again, the input is padded; with a kernel of size 3 x 3, for example, one row is added on top and bottom each, and one column, on the left and the right. Again, the kernel slides over the image, row by row and column by column. At each point it computes an aggregate that is the sum of point-wise products. Mathematically, that’s a <em>dot product</em>.</p>
+<p>To get a feel for how this works, we look at a bare-bones example: a white square on black background (<a href="#fig-images-square">fig.&nbsp;<span>15.1</span></a>).</p>
+<div id="fig-images-square" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/images-square.png" class="quarto-discovered-preview-image img-fluid figure-img" alt="A white square on a black background."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;15.1: White square on black background.</figcaption><p></p>
+</figure>
+</div>
+<p>Nicely, the open-source graphics program Gimp has a feature that allows one to experiment with custom filters (“Filters” -&gt; “Custom” -&gt; “Convolution matrix”). We can construct kernels and directly examine their effects.</p>
+<p>Say we want to find the left edge of the square. We are looking for locations where the color changes, horizontally, from black to white. This can be achieved with a 3x3 kernel that looks like this (<a href="#fig-images-square-left">fig.&nbsp;<span>15.2</span></a>):</p>
+<pre><code> 0 0 0
+-1 1 0
+ 0 0 0</code></pre>
+<p>This kernel is <em>similar</em> to the edge type we’re interested in in that it has, in the second row, a horizontal transition from -1 to 1.</p>
+<p>Analogously, kernels can be constructed that extract the right (<a href="#fig-images-square-right">fig.&nbsp;<span>15.3</span></a>), top (<a href="#fig-images-square-top">fig.&nbsp;<span>15.4</span></a>), and bottom (<a href="#fig-images-square-bottom">fig.&nbsp;<span>15.5</span></a>) edges.</p>
+<div id="fig-images-square-left" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/images-square-left.png" class="img-fluid figure-img" alt="A gimp convolution matrix of size 5x5. Individual values read: Row 1: all zero. Row 2: all zero. Row 3: 0, -1, 1, 0, 0. Row 4: all zero. Row 5: all zero."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;15.2: Gimp convolution matrix that detects the left edge.</figcaption><p></p>
+</figure>
+</div>
+<div id="fig-images-square-right" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/images-square-right.png" class="img-fluid figure-img" alt="A gimp convolution matrix of size 5x5. Individual values read: Row 1: all zero. Row 2: all zero. Row 3: 0, 1, -1, 0, 0. Row 4: all zero. Row 5: all zero."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;15.3: Gimp convolution matrix that detects the right edge.</figcaption><p></p>
+</figure>
+</div>
+<div id="fig-images-square-top" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/images-square-top.png" class="img-fluid figure-img" alt="A gimp convolution matrix of size 5x5. Individual values read: Row 1: all zero. Row 2: 0, 0, -1, 0, 0. Row 3: 0, 0, 1, 0, 0. Row 4: all zero. Row 5: all zero."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;15.4: Gimp convolution matrix that detects the top edge.</figcaption><p></p>
+</figure>
+</div>
+<div id="fig-images-square-bottom" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/images-square-bottom.png" class="img-fluid figure-img" alt="A gimp convolution matrix of size 5x5. Individual values read: Row 1: all zero. Row 2: all zero. Row 3: 0, 0, 1, 0, 0. Row 4: 0, 0, -1, 0, 0. Row 5: all zero."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;15.5: Gimp convolution matrix that detects the bottom edge.</figcaption><p></p>
+</figure>
+</div>
+<p>To understand this numerically, we can simulate a tiny image (<a href="#fig-images-cross-correlation">fig.&nbsp;<span>15.6</span></a>, left). The numbers represent a grayscale image with values ranging from 0 to 255. To its right, we have the kernel; this is the one we used to detect the left edge. As a result of having that kernel slide over the image, we obtain the “image” on the right. <code>0</code> being the lowest possible value, negative pixels end up black, and we obtain a white edge on black background, just like we saw with Gimp.</p>
+<div id="fig-images-cross-correlation" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/images-cross-correlation.png" class="img-fluid figure-img" alt="Convolution by example. On the left, the white square on black background, with black pixels mapped to value 0 and white pixels, to 255. In the middle, the 3 x 3 kernel that detects a left edge, with the central row holding values -1, 1, 0, and both other rows being all zero. On the right, the result. Rows 1 and 2 as well as 7 and 8 are all zero; same with columns 1, 2, 4, 5, 6, and 8. Column 3 reads: 0, 0, 1, 1, 1, 1, 0, 0. Column 7 reads: 0, 0, -255, -255, -255, -255, 0, 0."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;15.6: Input image, filter, and result as pixel values. Negative pixel values being impossible, -255 will end up as 0.</figcaption><p></p>
+</figure>
+</div>
+<p>Now, we’ve talked a lot about constructing kernels. Neural networks are all about <em>learning</em> feature detectors, not having them programmed up-front. Naturally, then, learning a filter means having a layer type whose weights embody this logic.</p>
+</section>
+<section id="convolutional-layers-in-torch" class="level4" data-number="15.2.1.3">
+<h4 data-number="15.2.1.3" class="anchored" data-anchor-id="convolutional-layers-in-torch"><span class="header-section-number">15.2.1.3</span> Convolutional layers in <code>torch</code></h4>
+<p>So far, the only layer type we’ve seen that learns weights is <code>nn_linear()</code>. <code>nn_linear()</code> performs an affine operation: It takes an input tensor, matrix-multiplies it by its weight matrix <span class="math inline">\(\mathbf{W}\)</span>, and adds the bias vector <span class="math inline">\(\mathbf{b}\)</span>. While there is just a single bias per layer, independently of the number of neurons it has, this is not the case for the weights: There is a unique connection between each feature in the input tensor and each of the layer’s neurons.</p>
+<p>This is not true for <code>nn_conv2d()</code>, <code>torch</code>’s (two-dimensional) convolution<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> layer.</p>
+<p>Back to how convolutional layers differ from linear ones. We’ve already seen what the layer’s effect is supposed to be: A <em>kernel</em> should slide over its input, generating an output value at each location. Now the kernel, for a convolutional layer, is exactly its weight matrix. The kernel sliding over an input image means that weights are re-used every time it shifts its position. Thus, the number of weights is determined by the size of the kernel, not the size of the input. As a consequence, a convolutional layer is way more economical than a linear one.</p>
+<p>Another way to express this is the following.</p>
+<p>Conceptually, we are looking for the same thing, wherever it appears in the image. Take the most standard of standard image classification benchmarks, MNIST. It is about classifying images of the Arabic numerals 0-9. Say we want to learn the shape for a 2. The 2 could be right in the middle of the image, or it could be shifted to the left (say). An algorithm should be able to recognize it no matter where. Additional requirements depend on the task. If all we need to be able to do is say “that’s a 2”, we’re good to use an algorithm that is <em>translation-invariant</em>: It outputs the same thing independently of any shifts that may have occurred. For classification, that’s just fine: A 2 is a 2 is a 2.</p>
+<p>Another important task, though, is image segmentation (something we’ll look at in an upcoming chapter). In segmentation, we want to mark all pixels in an image according to whether they are part of some object or not. Think tumor cells, for example. The 2 is still a 2, but we do need the information where in the image it is located. The algorithm to use now has to be <em>translation-equivariant</em>: If a shift has occurred, the target is still detected, but at a new location. And thinking about the convolution algorithm, translation-equivariant is exactly what it is.</p>
+<p>So now, we have an idea how <code>torch</code> lets us detect individual features in an image. This gives us the first in our list of desiderates. The second is about combining feature detectors, that is, building up a hierarchy, in order to discern more and more specialized types of objects. This means that from a single layer, we move on to a network of layers.</p>
+</section>
+</section>
+<section id="build-up-feature-hierarchies" class="level3" data-number="15.2.2">
+<h3 data-number="15.2.2" class="anchored" data-anchor-id="build-up-feature-hierarchies"><span class="header-section-number">15.2.2</span> Build up feature hierarchies</h3>
+<p>A prototypical convolutional neural network for image classification will chain blocks composed of three types of layers: convolutional ones (<code>nn_conv1d()</code>, <code>nn_conv2d()</code>, or <code>nn_conv3d()</code>, depending on the dimension we’re in), activation layers (e.g., <code>nn_relu()</code>), and pooling layers (e.g., <code>nn_maxpool1d()</code>, <code>nn_maxpool2d()</code>, <code>nn_maxpool3d()</code>).</p>
+<p>The only type we haven’t talked about yet are the pooling layers. Just like activation layers, these don’t have any parameters; what they do is aggregate neighboring tensor values. The size of the region to summarize is specified in the layer constructor’s parameters. Various types of aggregation are available: <code>nn_maxpool&lt;n&gt;d()</code> picks the highest value, while <code>nn_avg_pool&lt;n&gt;d()</code> computes the average.</p>
+<p>Why would one want to perform these kinds of aggregation? Practically speaking, one <em>has to</em> if one wants to arrive at a per-image (as opposed to per-pixel) output. But we can’t just choose <em>any</em> way of aggregating spatially-arranged values. Picture, for example, an average where the interior pixels of an image patch were weighted higher than the exterior ones. Then, it would make a difference where in the patch some object was located. But for classification, this should not be the case. For classification, as opposed to segmentation, we want translation <em>invariance</em> – not just <em>equivariance</em>, the property we just said convolution has. And translation-invariant is just what layers like <code>nn_maxpool2d()</code>, <code>nn_avgpool2d()</code>, etc. are.</p>
+<section id="a-prototypical-convnet" class="level4" data-number="15.2.2.1">
+<h4 data-number="15.2.2.1" class="anchored" data-anchor-id="a-prototypical-convnet"><span class="header-section-number">15.2.2.1</span> A prototypical convnet</h4>
+<p>A template for a convolutional network, called “convnet” from now on, could thus look as below. To preempt any possible confusion: Even though, above, I was talking about three types of <em>layers</em>, there really is just one type in the code: the convolutional one. For brevity, both ReLU activation and max pooling are realized as functions instead.</p>
+<p>Here is a possible template. It is not intended as a recommendation (as to number of filters, kernel size, or other hyperparameters, for example) – just to illustrate the mechanics. More detailed comments follow.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(torch)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>convnet <span class="ot">&lt;-</span> <span class="fu">nn_module</span>(</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">"convnet"</span>,</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">initialize =</span> <span class="cf">function</span>() {</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># nn_conv2d(in_channels, out_channels, kernel_size)</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>conv1 <span class="ot">&lt;-</span> <span class="fu">nn_conv2d</span>(<span class="dv">1</span>, <span class="dv">16</span>, <span class="dv">3</span>)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>conv2 <span class="ot">&lt;-</span> <span class="fu">nn_conv2d</span>(<span class="dv">16</span>, <span class="dv">32</span>, <span class="dv">3</span>)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>conv3 <span class="ot">&lt;-</span> <span class="fu">nn_conv2d</span>(<span class="dv">32</span>, <span class="dv">64</span>, <span class="dv">3</span>)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>output <span class="ot">&lt;-</span> <span class="fu">nn_linear</span>(<span class="dv">2304</span>, <span class="dv">3</span>)</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  },</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">forward =</span> <span class="cf">function</span>(x) {</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    x <span class="sc">%&gt;%</span> </span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">conv1</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nnf_relu</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nnf_max_pool2d</span>(<span class="dv">2</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">conv2</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nnf_relu</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nnf_max_pool2d</span>(<span class="dv">2</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">conv3</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nnf_relu</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nnf_max_pool2d</span>(<span class="dv">2</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>      <span class="fu">torch_flatten</span>(<span class="at">start_dim =</span> <span class="dv">2</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">output</span>()</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">convnet</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>To understand what is going on, we need to know how images are represented in <code>torch</code>. By itself, an image is represented as a three-dimensional tensor, with one dimension indexing into available channels (package luz)} (one for gray-scale images, three for RGB, possibly more for different kinds of imaging outputs), and the other two, corresponding to the two spatial axes, height (rows) and width (columns). In deep learning, we work with batches; thus, there is an additional dimension – the very first one – that refers to batch number.</p>
+<p>Let’s look at an example image that may be used with the above template:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>img <span class="ot">&lt;-</span> <span class="fu">torch_randn</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">64</span>, <span class="dv">64</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>What we have here is an image, or more precisely, a batch containing a single image, that has a single channel, and is of size 64 x 64.</p>
+<p>That said, the above template assumes the following:</p>
+<ol type="1">
+<li>The input image has one channel. That’s why the first argument to <code>nn_conv2d()</code> is <code>1</code> when we construct the first of the conv layers. (No assumptions are made, on the other hand, about the size of the input image.)</li>
+<li>We want to distinguish between three different target classes. This means that the output layer, a linear module, needs to have three output channels.</li>
+</ol>
+<p>To test the code, we can call the un-trained model on our example image:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">model</span>(img)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>torch_tensor
+0.01 *
+ 6.4821  3.4166 -5.6050
+[ CPUFloatType{1,3} ][ grad_fn = &lt;AddmmBackward0&gt; ]</code></pre>
+<p>One final note about that template. When you were reading the code above, one line that might have stood out is the following:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>self<span class="sc">$</span>output <span class="ot">&lt;-</span> <span class="fu">nn_linear</span>(<span class="dv">2304</span>, <span class="dv">3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>How did that 2304, the number of input connections to <code>nn_linear()</code>, come about? It is the result of (1) a number of operations that each reduce spatial resolution, plus (2) a flattening operation that removes all dimensional information besides the batch dimension. This will make more sense once we’ve discussed the arguments to the layers in question. But one thing needs to be said upfront: <em>If this sounds like magic, there is a simple means to make the magic go away.</em> Namely, a simple way to find out about tensor shapes at any stage in a network is to comment all subsequent actions in <code>forward()</code>, and call the modified model. Naturally, this should not replace understanding, but it’s a great way not to lose one’s nerves when encountering shape errors.</p>
+<p>Now, about layer arguments.</p>
+</section>
+<section id="arguments-to-nn_conv2d" class="level4" data-number="15.2.2.2">
+<h4 data-number="15.2.2.2" class="anchored" data-anchor-id="arguments-to-nn_conv2d"><span class="header-section-number">15.2.2.2</span> Arguments to <code>nn_conv2d()</code></h4>
+<p>Above, we passed three arguments to <code>nn_conv2d()</code>: <code>in_channels</code>, <code>out_channels</code>, and <code>kernel_size</code>. This is not an exhaustive list of parameters, though. The remaining ones all have default values, but it is important to know about their existence. We’re going to elaborate on three of them, all of whom you’re likely to play with applying the template to some concrete task. All of them affect output size. So do two of the three mandatory arguments, <code>out_channels</code> and <code>kernel_size</code>:</p>
+<ul>
+<li><p><code>out_channels</code> refers to the number of kernels (often called <em>filters</em>, in this context) learned. Its value affects the second of the four dimensions of the output tensor; it does not affect spatial resolution, though. Learning more filters adds capacity to the network, as it increases the number of weights.</p></li>
+<li><p><code>kernel_size</code>, on the other hand, <em>does</em> alter spatial resolution – unless its value is 1, in which case the kernel never exceeds image boundaries. Like <code>out_channels</code>, it is a candidate for experimentation. In general, though, it is advisable to keep kernel size rather small, and chain a larger number of convolutional layers, instead of enlarging kernel size in a “shallow” network.</p></li>
+</ul>
+<p>Now for the three non-mandatory arguments to explore.</p>
+<ol type="1">
+<li><p><code>padding</code> is something we’ve encountered before. Any kernel that extends over more than a single pixel will move outside the valid region when sliding over an image; the more, the bigger the kernel. General options are to (1) either pad the image (with zeroes, for example), or (2) compute the dot product only where possible. In the latter case, spatial resolution will decrease. That need not in itself be a problem; like so many things, it’s a matter of experimentation. By default, <code>torch</code> does not pad images; however by passing a value greater than <code>0</code> for <code>padding</code>, you can ensure that spatial resolution is preserved, whatever the kernel size. Compare <a href="#fig-images-conv-arithmetic-padding">fig.&nbsp;<span>15.7</span></a>, reproduced from a nice compilation by <span class="citation" data-cites="2016arXiv160307285D">Dumoulin and Visin (<a href="references.html#ref-2016arXiv160307285D" role="doc-biblioref">2016</a>)</span>, to see the effect of padding.</p></li>
+<li><p><code>stride</code> refers to the way a kernel moves over the image. With a <code>stride</code> greater than <code>1</code>, it takes “leaps” of sorts – see <a href="#fig-images-conv-arithmetic-strides">fig.&nbsp;<span>15.8</span></a>. This results in fewer “snapshots” being taken. As a result, spatial resolution decreases.</p></li>
+<li><p>A setting of <code>dilation</code> greater than <code>1,</code> too, results in fewer snapshots, but for a different reason. Now, it’s not that the kernel moves faster. Instead, the pixels it is applied to are not adjacent anymore. They’re spread out – how much, depends on the argument’s value. See <a href="#fig-images-conv-arithmetic-dilation">fig.&nbsp;<span>15.9</span></a>.</p></li>
+</ol>
+<div id="fig-images-conv-arithmetic-padding" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/images-conv-arithmetic-padding.png" class="img-fluid figure-img" alt="Comparing convolution with and without padding. A 3 x 3 filter slides over a 4 x 4 image. Top row: The resulting image is of size 2 x 2. Kernel never transcends the image. Bottom row: Padding by two on all sides. On the image's edges, kernel is aligned such that it stands out by two pixels."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;15.7: Convolution, and the effect of padding. Copyright <span class="citation" data-cites="2016arXiv160307285D">Dumoulin and Visin (<a href="references.html#ref-2016arXiv160307285D" role="doc-biblioref">2016</a>)</span>, reproduced under <a href="https://github.com/vdumoulin/conv_arithmetic/blob/master/LICENSE">MIT license</a>.</figcaption><p></p>
+</figure>
+</div>
+<div id="fig-images-conv-arithmetic-strides" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/images-conv-arithmetic-strides.png" class="img-fluid figure-img" alt="Convolution done with a strides setting of 2 x 2. A 3 x 3 filter slides over a 5 x 5 image. At each step, it jumps over one pixel, both when sliding horizontally and when sliding vertically."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;15.8: Convolution, and the effect of <code>strides</code>. Copyright <span class="citation" data-cites="2016arXiv160307285D">Dumoulin and Visin (<a href="references.html#ref-2016arXiv160307285D" role="doc-biblioref">2016</a>)</span>, reproduced under <a href="https://github.com/vdumoulin/conv_arithmetic/blob/master/LICENSE">MIT license</a>.</figcaption><p></p>
+</figure>
+</div>
+<div id="fig-images-conv-arithmetic-dilation" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/images-conv-arithmetic-dilation.png" class="img-fluid figure-img" alt="Convolution done with a dilation factor of 2. A 3 x 3 filter slides over a 7 x 7 image. The filter is mapped in a way that there are 1-pixel holes in the image that are not covered by the filter."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;15.9: Convolution, and the effect of <code>dilation</code>. Copyright <span class="citation" data-cites="2016arXiv160307285D">Dumoulin and Visin (<a href="references.html#ref-2016arXiv160307285D" role="doc-biblioref">2016</a>)</span>, reproduced under <a href="https://github.com/vdumoulin/conv_arithmetic/blob/master/LICENSE">MIT license</a>.</figcaption><p></p>
+</figure>
+</div>
+<p>For non-mandatory arguments <code>padding</code>, <code>stride</code>, and <code>dilation</code>, <a href="#tbl-images-convargs">tbl.&nbsp;<span>15.1</span></a> has a summary of defaults and effects.</p>
+<div id="tbl-images-convargs" class="anchored">
+<table class="table">
+<caption>Table&nbsp;15.1: Arguments to <code>nn_conv_2d()</code> you may want to experiment with – default values and non-default actions.</caption>
+<colgroup>
+<col style="width: 26%">
+<col style="width: 26%">
+<col style="width: 47%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Argument</th>
+<th>Default</th>
+<th>Action (if non-default)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>padding</code></td>
+<td>0</td>
+<td>virtual rows/columns added around the image</td>
+</tr>
+<tr class="even">
+<td><code>stride</code></td>
+<td>1</td>
+<td>kernel moves across image at bigger step size (“jumps” over pixels)</td>
+</tr>
+<tr class="odd">
+<td><code>dilation</code></td>
+<td>1</td>
+<td>kernel is applied to spread-out image pixels (“holes” in kernel)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="arguments-to-pooling-layers" class="level4" data-number="15.2.2.3">
+<h4 data-number="15.2.2.3" class="anchored" data-anchor-id="arguments-to-pooling-layers"><span class="header-section-number">15.2.2.3</span> Arguments to pooling layers</h4>
+<p>Pooling layers compute aggregates over neighboring pixels. The number of pixels of aggregate over in every dimension is specified in the layer constructor’s first argument (alternatively, the corresponding function’s second argument). Slightly misleadingly, that argument is called <code>kernel_size</code>, although there are no weights involved: For example, in the above template, we were unconditionally taking the maximum pixel value over regions of size 2 x 2.</p>
+<p>In analogy to convolution layers, pooling layers also accept arguments <code>padding</code> and <code>stride</code>. However, they are seldom used.</p>
+</section>
+<section id="zooming-out" class="level4" data-number="15.2.2.4">
+<h4 data-number="15.2.2.4" class="anchored" data-anchor-id="zooming-out"><span class="header-section-number">15.2.2.4</span> Zooming out</h4>
+<p>We’ve talked a lot about layers and their arguments. Let’s zoom out and think back about the general template, and what it is supposed to achieve.</p>
+<p>We are chaining blocks that, each, perform a convolution, apply a non-linearity, and spatially aggregate the result. Each block’s weights act as feature detectors, and every block but the first receives as input something that already is the result of applying one or more feature detectors. The magical thing that happens, and the reason behind the success of convnets, is that by chaining layers, a <em>hierarchy</em> of features is built. Early layers detect edges and textures, later ones, patterns of various complexity, and the final ones, objects and parts of objects (see <a href="#fig-images-feature-visualization">fig.&nbsp;<span>15.10</span></a>, a beautiful visualization reproduced from <span class="citation" data-cites="olah2017feature">Olah, Mordvintsev, and Schubert (<a href="references.html#ref-olah2017feature" role="doc-biblioref">2017</a>)</span>).</p>
+<div id="fig-images-feature-visualization" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/images-feature-visualization.png" class="img-fluid figure-img" alt="What layers at different levels of the hierarchy respond to, by example. From left to right: Various species of edges, textures, patterns, parts, objects."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;15.10: Feature visualization on a subset of layers of GoogleNet. Figure from <span class="citation" data-cites="olah2017feature">Olah, Mordvintsev, and Schubert (<a href="references.html#ref-olah2017feature" role="doc-biblioref">2017</a>)</span>, reproduced under <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution CC-BY 4.0</a> without modification.</figcaption><p></p>
+</figure>
+</div>
+<p>We now know enough about coding convnets and how they work to explore a real example.</p>
+</section>
+</section>
+</section>
+<section id="classification-on-tiny-imagenet" class="level2" data-number="15.3">
+<h2 data-number="15.3" class="anchored" data-anchor-id="classification-on-tiny-imagenet"><span class="header-section-number">15.3</span> Classification on Tiny Imagenet</h2>
+<p>Before we start coding, let me anchor your expectations. In this chapter, we design and train a basic convnet from scratch. As to data pre-processing, we do what is needed, not more. In the next two chapters, we’ll learn about common techniques used to improve model training, in terms of quality as well as speed. Once we’ve covered those, we’ll pick up right where this chapter ended, and apply a few of those techniques to the present task. Therefore, what we’re doing here is build a baseline, to be used in comparison with more sophisticated approaches. This is “just” a beginning.</p>
+<section id="data-pre-processing" class="level3" data-number="15.3.1">
+<h3 data-number="15.3.1" class="anchored" data-anchor-id="data-pre-processing"><span class="header-section-number">15.3.1</span> Data pre-processing</h3>
+<p>In addition to <code>torch</code> and <code>luz</code>, we load a third package from the <code>torch</code> ecosystem: <code>torchvision</code>. <code>torchvision</code> provides operations on images, as well as a set of pre-trained models and common benchmark datasets.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(torch)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(torchvision)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(luz)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The dataset we use is “Tiny Imagenet”. Tiny Imagenet is a subset of <a href="https://image-net.org/index.php">ImageNet</a>, a gigantic collection of more than fourteen million images, initially made popular through the “ImageNet Large Scale Visual Recognition Challenge” that was run between 2012 and 2017. In the challenge, the most popular task was multi-class classification, with one thousand different classes to choose from.</p>
+<p>One thousand classes is a lot; and with images typically being processed at a resolution of 256 x 256, training a model takes a lot of time, even on luxurious hardware. For that reason, a more manageable version was created as part of a popular Stanford class on deep learning for images, <a href="http://cs231n.stanford.edu/">Convolutional Neural Networks for Visual Recognition (CS231n)</a>. The condensed dataset has two hundred classes, with five hundred training images per class. Two hundred classes, that’s still a lot! (Most introductory examples will do “cats vs.&nbsp;dogs”, or some other binary problem.) Thus, it’s not an easy task.</p>
+<p>We start by downloading the data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">777</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">torch_manual_seed</span>(<span class="dv">777</span>)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>dir <span class="ot">&lt;-</span> <span class="st">"~/.torch-datasets"</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>train_ds <span class="ot">&lt;-</span> <span class="fu">tiny_imagenet_dataset</span>(</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  dir,</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">download =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">transform =</span> <span class="cf">function</span>(x) {</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    x <span class="sc">%&gt;%</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>      <span class="fu">transform_to_tensor</span>() </span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>valid_ds <span class="ot">&lt;-</span> <span class="fu">tiny_imagenet_dataset</span>(</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>  dir,</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">split =</span> <span class="st">"val"</span>,</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">transform =</span> <span class="cf">function</span>(x) {</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    x <span class="sc">%&gt;%</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>      <span class="fu">transform_to_tensor</span>()</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Notice how <code>tiny_imagenet_dataset()</code> takes an argument called <code>transform</code>. This is used to specify operations to be performed as part of the input pipeline. Here, not much is happening: We just convert images to something we can work with, tensors. However, very soon we’ll see this argument used to specify sequences of transformations such as resizing, cropping, rotation, and more.</p>
+<p>What remains to be done is create the data loaders.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>train_dl <span class="ot">&lt;-</span> <span class="fu">dataloader</span>(train_ds,</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">batch_size =</span> <span class="dv">128</span>,</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">shuffle =</span> <span class="cn">TRUE</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>valid_dl <span class="ot">&lt;-</span> <span class="fu">dataloader</span>(valid_ds, <span class="at">batch_size =</span> <span class="dv">128</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Images are RGB, and of size 64 x 64:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>batch <span class="ot">&lt;-</span> train_dl <span class="sc">%&gt;%</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dataloader_make_iter</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dataloader_next</span>()</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(batch<span class="sc">$</span>x)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>[1] 128   3  64  64</code></pre>
+<p>Classes are integers between 1 to 200:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>batch<span class="sc">$</span>y</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>torch_tensor
+ 172
+  17
+  76
+  78
+ 111
+  57
+   8
+ 166
+ 146
+ 114
+  41
+  28
+ 138
+  98
+  57
+  98
+  25
+ 148
+ 166
+ 135
+  31
+ 182
+  48
+ 184
+ 160
+ 166
+  40
+ 115
+ 161
+  21
+... [the output was truncated (use n=-1 to disable)]
+[ CPULongType{128} ]</code></pre>
+<p>Now we define a convnet, and train it with <code>luz</code>.</p>
+</section>
+<section id="image-classification-from-scratch" class="level3" data-number="15.3.2">
+<h3 data-number="15.3.2" class="anchored" data-anchor-id="image-classification-from-scratch"><span class="header-section-number">15.3.2</span> Image classification from scratch</h3>
+<p>Here is a prototypical convnet, modeled after our template, but more powerful.</p>
+<p>In addition to what we’ve seen already, the code illustrates a way of modularizing the code, arranging layers into three groups:</p>
+<ul>
+<li><p>a (large) feature detector that, as a whole, is shift-equivariant;</p></li>
+<li><p>a shift-invariant pooling layer (<code>nn_adaptive_avg_pool2d()</code>) that allows us to specify a desired output resolution; and</p></li>
+<li><p>a feed-forward neural network that takes the computed features and uses them to produce final scores: two hundred values, corresponding to two hundred classes, for each item in the batch.</p></li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>convnet <span class="ot">&lt;-</span> <span class="fu">nn_module</span>(</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"convnet"</span>,</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">initialize =</span> <span class="cf">function</span>() {</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>features <span class="ot">&lt;-</span> <span class="fu">nn_sequential</span>(</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_conv2d</span>(<span class="dv">3</span>, <span class="dv">64</span>, <span class="at">kernel_size =</span> <span class="dv">3</span>, <span class="at">padding =</span> <span class="dv">1</span>),</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_relu</span>(),</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_max_pool2d</span>(<span class="at">kernel_size =</span> <span class="dv">2</span>),</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_conv2d</span>(<span class="dv">64</span>, <span class="dv">128</span>, <span class="at">kernel_size =</span> <span class="dv">3</span>, <span class="at">padding =</span> <span class="dv">1</span>),</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_relu</span>(),</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_max_pool2d</span>(<span class="at">kernel_size =</span> <span class="dv">2</span>),</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_conv2d</span>(<span class="dv">128</span>, <span class="dv">256</span>, <span class="at">kernel_size =</span> <span class="dv">3</span>, <span class="at">padding =</span> <span class="dv">1</span>),</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_relu</span>(),</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_max_pool2d</span>(<span class="at">kernel_size =</span> <span class="dv">2</span>),</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_conv2d</span>(<span class="dv">256</span>, <span class="dv">512</span>, <span class="at">kernel_size =</span> <span class="dv">3</span>, <span class="at">padding =</span> <span class="dv">1</span>),</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_relu</span>(),</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_max_pool2d</span>(<span class="at">kernel_size =</span> <span class="dv">2</span>),</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_conv2d</span>(<span class="dv">512</span>, <span class="dv">1024</span>, <span class="at">kernel_size =</span> <span class="dv">3</span>, <span class="at">padding =</span> <span class="dv">1</span>),</span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_relu</span>(),</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_adaptive_avg_pool2d</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>))</span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>classifier <span class="ot">&lt;-</span> <span class="fu">nn_sequential</span>(</span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_linear</span>(<span class="dv">1024</span>, <span class="dv">1024</span>),</span>
+<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_relu</span>(),</span>
+<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_linear</span>(<span class="dv">1024</span>, <span class="dv">1024</span>),</span>
+<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_relu</span>(),</span>
+<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_linear</span>(<span class="dv">1024</span>, <span class="dv">200</span>)</span>
+<span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a>  },</span>
+<span id="cb15-29"><a href="#cb15-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">forward =</span> <span class="cf">function</span>(x) {</span>
+<span id="cb15-30"><a href="#cb15-30" aria-hidden="true" tabindex="-1"></a>    x <span class="ot">&lt;-</span> self<span class="sc">$</span><span class="fu">features</span>(x)<span class="sc">$</span><span class="fu">squeeze</span>()</span>
+<span id="cb15-31"><a href="#cb15-31" aria-hidden="true" tabindex="-1"></a>    x <span class="ot">&lt;-</span> self<span class="sc">$</span><span class="fu">classifier</span>(x)</span>
+<span id="cb15-32"><a href="#cb15-32" aria-hidden="true" tabindex="-1"></a>    x</span>
+<span id="cb15-33"><a href="#cb15-33" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb15-34"><a href="#cb15-34" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now, we train the network. The classifier outputs raw logits, not probabilities; this means we need to make use of <code>nn_cross_entropy_loss()</code>. We train for fifty epochs:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>fitted <span class="ot">&lt;-</span> convnet <span class="sc">%&gt;%</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">setup</span>(</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">loss =</span> <span class="fu">nn_cross_entropy_loss</span>(),</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">optimizer =</span> optim_adam,</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">metrics =</span> <span class="fu">list</span>(</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>      <span class="fu">luz_metric_accuracy</span>()</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fit</span>(train_dl,</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>      <span class="at">epochs =</span> <span class="dv">50</span>,</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>      <span class="at">valid_data =</span> valid_dl,</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>      <span class="at">verbose =</span> <span class="cn">TRUE</span></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>      )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>After fifty epochs, this resulted in accuracy values of 0.92 and 0.22, on the training and test sets, respectively. This is quite a difference! On the training set, this model is near-perfect; on the test set, it only gets up to every fourth image correct.</p>
+<pre><code>Epoch 1/50
+Train metrics: Loss: 5.0822 - Acc: 0.0146                                     
+Valid metrics: Loss: 4.8564 - Acc: 0.0269
+Epoch 2/50
+Train metrics: Loss: 4.5545 - Acc: 0.0571                                     
+Valid metrics: Loss: 4.2592 - Acc: 0.0904
+Epoch 3/50
+Train metrics: Loss: 4.0727 - Acc: 0.1122                                     
+Valid metrics: Loss: 3.9097 - Acc: 0.1381
+...
+...
+Epoch 48/50
+Train metrics: Loss: 0.3033 - Acc: 0.9064                                     
+Valid metrics: Loss: 10.2999 - Acc: 0.2188
+Epoch 49/50
+Train metrics: Loss: 0.2932 - Acc: 0.9098                                     
+Valid metrics: Loss: 10.7348 - Acc: 0.222
+Epoch 50/50
+Train metrics: Loss: 0.2733 - Acc: 0.9152                                     
+Valid metrics: Loss: 10.641 - Acc: 0.2204</code></pre>
+<p>With two hundred options to choose from, “every fourth” does not even seem so bad; however, looking at the enormous difference between both metrics, something is not quite right. The model has severely <em>overfitted</em> to the training set – memorized the training samples, in other words. Overfitting is not specific to deep learning; it is the nemesis of all of machine learning. We’ll consecrate the whole next chapter to this topic.</p>
+<p>Before we end, though, let’s see how we would use <code>luz</code> to obtain predictions:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>preds <span class="ot">&lt;-</span> last <span class="sc">%&gt;%</span> <span class="fu">predict</span>(valid_dl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><code>predict()</code> directly returns what is output by the model: two hundred non-normalized scores for each item. That’s because the model’s last layer is a linear module, with no activation applied. (Remember how the loss function, <code>nn_cross_entropy_loss()</code>, applies a <em>softmax</em> operation before calculating cross-entropy.)</p>
+<p>Now, we could certainly call <code>nnf_softmax()</code> ourselves, converting outputs from <code>predict()</code> to probabilities:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>preds <span class="ot">&lt;-</span> <span class="fu">nnf_softmax</span>(preds, <span class="at">dim =</span> <span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>However, if we’re just interested in determining the most likely class, we can as well skip the normalization step, and directly pick the highest value for each batch item:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">torch_argmax</span>(preds, <span class="at">dim =</span> <span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>torch_tensor
+  55
+   1
+   1
+   1
+   1
+   1
+   1
+  89
+  45
+   1
+   1
+  19
+   1
+ 190
+  14
+   1
+ 185
+   1
+   1
+ 150
+  77
+  37
+ 131
+ 193
+  80
+   1
+   1
+  45
+   1
+ 131
+... [the output was truncated (use n=-1 to disable)]
+[ CUDALongType{10000} ]</code></pre>
+<p>We could now go on to compare predictions with actual classes, looking for inspiration on what could be done better. But at this stage, there is still a <em>lot</em> that can be done better! We will return to this application in due time, but first, we need to learn about overfitting, and ways to speed up model training.</p>
+
+
+<div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
+<div id="ref-2016arXiv160307285D" class="csl-entry" role="listitem">
+Dumoulin, Vincent, and Francesco Visin. 2016. <span>“<span class="nocase">A guide to convolution arithmetic for deep learning</span>.”</span> <em>arXiv e-Prints</em>, March, arXiv:1603.07285. <a href="https://arxiv.org/abs/1603.07285">https://arxiv.org/abs/1603.07285</a>.
+</div>
+<div id="ref-olah2017feature" class="csl-entry" role="listitem">
+Olah, Chris, Alexander Mordvintsev, and Ludwig Schubert. 2017. <span>“Feature Visualization.”</span> <em>Distill</em>. <a href="https://doi.org/10.23915/distill.00007">https://doi.org/10.23915/distill.00007</a>.
+</div>
+</div>
+</section>
+</section>
+<section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn1"><p>Like I said above, I’ll be using the established term “convolution” from now on. Actually – given that weights are <em>learned –</em> it does not matter that much anyway.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./training_with_luz.html" class="pagination-link">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Training with luz</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./overfitting.html" class="pagination-link">
+        <span class="nav-page-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Making models generalize</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+</body></html>

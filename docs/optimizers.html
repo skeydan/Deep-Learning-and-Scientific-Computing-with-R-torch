@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-99.9.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Deep Learning and Scientific Computing with R torch - 8&nbsp; Optimizers</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./loss_functions.html" rel="next">
+<link href="./modules.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./basics_overview.html">Getting familiar with torch</a></li><li class="breadcrumb-item"><a href="./optimizers.html"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Optimizers</span></a></li></ol></nav>
+      <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+      </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Deep Learning and Scientific Computing with R torch</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">Getting familiar with torch</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./basics_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Overview</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./what_is_torch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">On <code>torch</code>, and how to get it</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./tensors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Tensors</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Autograd</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optim_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Function minimization with <em>autograd</em></span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./network_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">A neural network from scratch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./modules.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Modules</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optimizers.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Optimizers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./loss_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Loss functions</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optim_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Function minimization with L-BFGS</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./network_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Modularizing the neural network</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">Deep learning with torch</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./dl_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Overview</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Loading data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./training_with_luz.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Training with luz</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./image_classification_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">A first go at image classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./overfitting.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Making models generalize</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./training_efficiency.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Speeding up training</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./image_classification_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Image classification, take two: Improving performance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./image_segmentation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Image segmentation</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./tabular_data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Tabular data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Time series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./audio_classification.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Audio classification</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">Other things to do with torch: Matrices, Fourier Transform, and Wavelets</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./other_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Overview</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./matrix_computations_leastsquares.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Matrix computations: Least-squares problems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./matrix_computations_convolution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Matrix computations: Convolution</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./fourier_transform_dft.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Exploring the Discrete Fourier Transform (DFT)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./fourier_transform_fft.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">The Fast Fourier Transform (FFT)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wavelets.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Wavelets</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#why-optimizers" id="toc-why-optimizers" class="nav-link active" data-scroll-target="#why-optimizers"><span class="header-section-number">8.1</span> Why optimizers?</a></li>
+  <li><a href="#using-built-in-torch-optimizers" id="toc-using-built-in-torch-optimizers" class="nav-link" data-scroll-target="#using-built-in-torch-optimizers"><span class="header-section-number">8.2</span> Using built-in <code>torch</code> optimizers</a></li>
+  <li><a href="#parameter-update-strategies" id="toc-parameter-update-strategies" class="nav-link" data-scroll-target="#parameter-update-strategies"><span class="header-section-number">8.3</span> Parameter update strategies</a>
+  <ul class="collapse">
+  <li><a href="#gradient-descent-a.k.a.-steepest-descent-a.k.a.-stochastic-gradient-descent-sgd" id="toc-gradient-descent-a.k.a.-steepest-descent-a.k.a.-stochastic-gradient-descent-sgd" class="nav-link" data-scroll-target="#gradient-descent-a.k.a.-steepest-descent-a.k.a.-stochastic-gradient-descent-sgd"><span class="header-section-number">8.3.1</span> Gradient descent (a.k.a. steepest descent, a.k.a. stochastic gradient descent (SGD))</a></li>
+  <li><a href="#things-that-matter" id="toc-things-that-matter" class="nav-link" data-scroll-target="#things-that-matter"><span class="header-section-number">8.3.2</span> Things that matter</a></li>
+  <li><a href="#staying-on-track-gradient-descent-with-momentum" id="toc-staying-on-track-gradient-descent-with-momentum" class="nav-link" data-scroll-target="#staying-on-track-gradient-descent-with-momentum"><span class="header-section-number">8.3.3</span> Staying on track: Gradient descent with momentum</a></li>
+  <li><a href="#adagrad" id="toc-adagrad" class="nav-link" data-scroll-target="#adagrad"><span class="header-section-number">8.3.4</span> Adagrad</a></li>
+  <li><a href="#rmsprop" id="toc-rmsprop" class="nav-link" data-scroll-target="#rmsprop"><span class="header-section-number">8.3.5</span> RMSProp</a></li>
+  <li><a href="#adam" id="toc-adam" class="nav-link" data-scroll-target="#adam"><span class="header-section-number">8.3.6</span> Adam</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span id="sec:optimizers" class="quarto-section-identifier"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Optimizers</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<p>By now, we’ve gone into quite some detail on tensors, automatic differentiation, and modules. In this chapter, we look into the final major concept present in core <code>torch</code>: <em>optimizers</em>. Where modules encapsulate layer and model logic, optimizers do the same for optimization strategies.</p>
+<p>Let’s start by pondering why having optimizer objects is so useful.</p>
+<section id="why-optimizers" class="level2" data-number="8.1">
+<h2 data-number="8.1" class="anchored" data-anchor-id="why-optimizers"><span class="header-section-number">8.1</span> Why optimizers?</h2>
+<p>To this question, there are two main types of answer. First, the technical one.</p>
+<p>If you look back at how we coded our first neural network, you’ll see that we proceeded like this:</p>
+<ul>
+<li><p>compute predictions (forward pass),</p></li>
+<li><p>calculate the loss,</p></li>
+<li><p>have <em>autograd</em> compute partial derivatives (calling <code>loss$backward()</code>), and</p></li>
+<li><p>update the parameters, subtracting from each some fraction of the gradient.</p></li>
+</ul>
+<p>Here is how that last part looked:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(torch)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># compute gradient of loss w.r.t. all tensors with</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># requires_grad = TRUE</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>loss<span class="sc">$</span><span class="fu">backward</span>()</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="do">### -------- Update weights -------- </span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Wrap in with_no_grad() because this is a part we don't </span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co"># want to record for automatic gradient computation</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">with_no_grad</span>({</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  w1 <span class="ot">&lt;-</span> w1<span class="sc">$</span><span class="fu">sub_</span>(learning_rate <span class="sc">*</span> w1<span class="sc">$</span>grad)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  w2 <span class="ot">&lt;-</span> w2<span class="sc">$</span><span class="fu">sub_</span>(learning_rate <span class="sc">*</span> w2<span class="sc">$</span>grad)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  b1 <span class="ot">&lt;-</span> b1<span class="sc">$</span><span class="fu">sub_</span>(learning_rate <span class="sc">*</span> b1<span class="sc">$</span>grad)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  b2 <span class="ot">&lt;-</span> b2<span class="sc">$</span><span class="fu">sub_</span>(learning_rate <span class="sc">*</span> b2<span class="sc">$</span>grad)  </span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>     </span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Zero gradients after every pass, as they'd accumulate</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>  <span class="co"># otherwise</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>  w1<span class="sc">$</span>grad<span class="sc">$</span><span class="fu">zero_</span>()</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>  w2<span class="sc">$</span>grad<span class="sc">$</span><span class="fu">zero_</span>()</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>  b1<span class="sc">$</span>grad<span class="sc">$</span><span class="fu">zero_</span>()</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>  b2<span class="sc">$</span>grad<span class="sc">$</span><span class="fu">zero_</span>()  </span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now this was a small network – imagine having to code such logic for architectures with tens or hundreds of layers! Surely this can’t be what developers of a deep learning framework want their users to do. Accordingly, weight updates are taken care of by specialized objects – the optimizers in question.</p>
+<p>Thus, the technical type of answer concerns usability and convenience. But more is involved. With the above approach, there’s hardly a way to find a good learning rate other than by trial and error. And most probably, there is not even an optimal learning rate that would be constant over the whole training process. Fortunately, a rich tradition of research has turned up at set of proven update strategies. These strategies commonly involve a <em>state</em> kept between operations. This is another reason why, just like modules, optimizers are objects in <code>torch</code>.</p>
+<p>Before we look deeper at these strategies, let’s see how we’d replace the above manual weight-updating process with a version that uses an optimizer.</p>
+</section>
+<section id="using-built-in-torch-optimizers" class="level2" data-number="8.2">
+<h2 data-number="8.2" class="anchored" data-anchor-id="using-built-in-torch-optimizers"><span class="header-section-number">8.2</span> Using built-in <code>torch</code> optimizers</h2>
+<p>An optimizer needs to know what it’s supposed to optimize. In the context of a neural network model, this will be the network’s parameters. With no real difference between “model modules” and “layer modules”, however, we can demonstrate how it works using a single built-in module such as <code>nn_linear()</code>.</p>
+<p>Here we instantiate a gradient descent optimizer designed to work on some linear module’s parameters:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>l <span class="ot">&lt;-</span> <span class="fu">nn_linear</span>(<span class="dv">10</span>, <span class="dv">2</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>opt <span class="ot">&lt;-</span> <span class="fu">optim_sgd</span>(l<span class="sc">$</span>parameters, <span class="at">lr =</span> <span class="fl">0.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>In addition to the always-required reference to what tensors should be optimized, <code>optim_sgd()</code> has just a single non-optional parameter: <code>lr</code>, the learning rate.</p>
+<p>Once we have an optimizer object, parameter updates are triggered by calling its <code>step()</code> method. One thing remains unchanged, though. We still need to make sure gradients are not accumulated over training iterations. This means we still call <code>zero_grad()</code> – but this time, on the optimizer object.</p>
+<p>This is the complete code replacing the above manual procedure:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># compute gradient of loss w.r.t. all tensors with</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># requires_grad = TRUE</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co"># no change here</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>loss<span class="sc">$</span><span class="fu">backward</span>()</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Still need to zero out gradients before the backward pass,</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co"># only this time, on the optimizer object</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>optimizer<span class="sc">$</span><span class="fu">zero_grad</span>()</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co"># use the optimizer to update model parameters</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>optimizer<span class="sc">$</span><span class="fu">step</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>I’m sure you’ll agree that usability-wise, this is an enormous improvement. Now, let’s get back to our original question – why optimizers? – and talk more about the second, strategic part of the answer.</p>
+</section>
+<section id="parameter-update-strategies" class="level2" data-number="8.3">
+<h2 data-number="8.3" class="anchored" data-anchor-id="parameter-update-strategies"><span class="header-section-number">8.3</span> Parameter update strategies</h2>
+<p>Searching for a good learning rate by trial and error is costly. And the learning rate isn’t even the only thing we’re uncertain about. All it does is specify how big of a step to take. However, that’s not the only unresolved question.</p>
+<p>So far, we’ve always assumed that the direction of steepest descent, as given by the gradient, is the best way to go. This is not always the case, though. So we are left with uncertainties regarding both magnitude and direction of parameter updates.</p>
+<p>Fortunately, over the last decade, there has been significant progress in research related to weight updating in neural networks. Here, we take a look at major considerations involved, and situate in context some of the most popular optimizers provided by <code>torch</code>.</p>
+<p>The baseline to compare against is <em>gradient descent</em>, or <em>steepest descent</em>, the algorithm we’ve been using in our manual implementations of function minimization and neural-network training. Let’s quickly recall the guiding principle behind it.</p>
+<section id="gradient-descent-a.k.a.-steepest-descent-a.k.a.-stochastic-gradient-descent-sgd" class="level3" data-number="8.3.1">
+<h3 data-number="8.3.1" class="anchored" data-anchor-id="gradient-descent-a.k.a.-steepest-descent-a.k.a.-stochastic-gradient-descent-sgd"><span class="header-section-number">8.3.1</span> Gradient descent (a.k.a. steepest descent, a.k.a. stochastic gradient descent (SGD))</h3>
+<p>The gradient – the vector of partial derivatives, one for each input feature – indicates the direction in which a function increases most. Going in the opposite direction means we descend the fastest way possible. Or does it?</p>
+<p>Unfortunately, it is not that simple. It depends on the landscape that surrounds us, or put more technically, the contours of the function we want to minimize. To illustrate, compare two situations.</p>
+<p>The first is the one we encountered when first learning about automatic differentiation. The example there was a quadratic function in two dimensions. We didn’t make a great deal out of it at the time, but an important point about this specific function was that the slope was the same in both dimensions. Under such conditions, steepest descent is optimal.</p>
+<p>Let’s verify that. The function was : <span class="math inline">\(f(x_1, x_2) = 0.2 {x_1}^2 + 0.2 {x_2}^2 - 5\)</span>, and its gradient, <span class="math inline">\(\begin{bmatrix}0.4\\0.4 \end{bmatrix}\)</span>. Now say we’re at point <span class="math inline">\((x1, x2) = (6,6)\)</span>. For each coordinate, we subtract 0.4 times its current value. Or rather, that would be if we had to use a learning rate of 1. But we don’t have to. If we pick a learning rate of 2.5, we can arrive at the minimum in a single step: <span class="math inline">\((x_1, x_2) = (6 - 2.5*0.4*6, 6 - 2.5*0.4*6) = (0,0)\)</span>. See below for an illustration of what happens in each case (<a href="#fig-optimizers-steepest-descent-symmetric">fig.&nbsp;<span>8.1</span></a>).</p>
+<div id="fig-optimizers-steepest-descent-symmetric" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/optimizers-steepest-descent-symmetric.png" class="quarto-discovered-preview-image img-fluid figure-img" alt="An isotropic paraboloid (one that has the same curvature in all dimensions), and two optimization paths. Both use the steepest-descent algorithm, but differ in learning rate. One needs many steps to arrive at the function's minimum, while the other gets there in a single step."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;8.1: Steepest descent on an isotropic paraboloid, using different learning rates.</figcaption><p></p>
+</figure>
+</div>
+<p>In a nutshell, thus, with a isotropic function like this – the variance being the same in both directions – it is “just” a matter of getting the learning rate right.</p>
+<p>Now compare this to what happens if slopes in both directions are decidedly distinct.</p>
+<p>This time, the coefficient for <span class="math inline">\(x_2\)</span> is ten times as big as that for <span class="math inline">\(x_1\)</span>: We have <span class="math inline">\(f(x_1, x_2) = 0.2 {x_1}^2 + 2 {x_2}^2 - 5\)</span>. This means that as we progress in the <span class="math inline">\(x_2\)</span> direction, the function value increases sharply, while in the <span class="math inline">\(x_1\)</span> direction, it rises much more slowly. Thus, during gradient descent, we make far greater progress in one direction than the other.</p>
+<p>Again, we investigate what happens for different learning rates. Below, we contrast three different settings. With the lowest learning rate, the process eventually reaches the minimum, but a lot more slowly than in the symmetric case. With a learning rate just slightly higher, descent gets lost in endless zig-zagging, oscillating between positive and negative values of the more influential variable, <span class="math inline">\(x_2\)</span>. Finally, a learning rate that, again, is just minimally higher, has a catastrophic effect: The function value explodes, zig-zagging up right to infinity (<a href="#fig-optimizers-steepest-descent-elliptic">fig.&nbsp;<span>8.2</span></a>).</p>
+<div id="fig-optimizers-steepest-descent-elliptic" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/optimizers-steepest-descent-elliptic.png" class="img-fluid figure-img" alt="A non-isotropic paraboloid, stretched-out widely along the x-axis, but with y-values centered sharply around y = 0. Displayed are three optimization paths, all using steepest descent, but varying in learning rate. One of them reaches the minimum after a high number of steps; the second zig-zags along the y-axis, making just minimal progress along the x-axis; the third zig-zags off to infinity."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;8.2: Steepest descent on a non-isotropic paraboloid, using (minimally!) different learning rates.</figcaption><p></p>
+</figure>
+</div>
+<p>This should be pretty convincing – even with a pretty conventional function of just two variables, steepest descent is far from being a panacea! And in deep learning, loss functions will be a <em>lot</em> less well-behaved. This is where the need for more sophisticated algorithms arises: Enter – again – optimizers.</p>
+</section>
+<section id="things-that-matter" class="level3" data-number="8.3.2">
+<h3 data-number="8.3.2" class="anchored" data-anchor-id="things-that-matter"><span class="header-section-number">8.3.2</span> Things that matter</h3>
+<p>Viewed conceptually, major modifications to steepest descent can be categorized by the considerations that drive them, or equivalently, by the problems they’re trying to solve. Here, we focus on three such considerations.</p>
+<p>First, instead of starting in a completely new direction every time we re-compute the gradient, we might want to keep a bit of the old direction – keep momentum, to use the technical term. This should help avoiding the inefficient zig-zagging seen in the example above.</p>
+<p>Second, looking back at just that example of minimizing a non-symmetric function … Why, really, should we be constrained to using the same learning rate for all variables? When it’s evident that all variables don’t vary to the same degree, why don’t we update them in individually appropriate ways?</p>
+<p>Third – and this is a fix for problems that only arise once you’ve taken actions to reduce the learning rate for overly-impactful features – you also want to make sure that learning still progresses, that parameters still get updated.</p>
+<p>These considerations are nicely illustrated by a few classics among the optimization algorithms.</p>
+</section>
+<section id="staying-on-track-gradient-descent-with-momentum" class="level3" data-number="8.3.3">
+<h3 data-number="8.3.3" class="anchored" data-anchor-id="staying-on-track-gradient-descent-with-momentum"><span class="header-section-number">8.3.3</span> Staying on track: Gradient descent with momentum</h3>
+<p>In gradient descent with momentum, we don’t <em>directly</em> use the gradient to update the weights. Instead, you can picture weight updates as particles moving on a trajectory: They want to keep going in whatever direction they’re going – keep their <em>momentum</em>, in physics speak – but get continually deflected by collisions. These “collisions” are friendly nudges to, please, keep into account the gradient at the <em>now current</em> position. These dynamics result in a two-step update logic.</p>
+<p>In the below formulas, the choice of symbols reflects the physical analogy. <span class="math inline">\(\mathbf{x}\)</span> is the position, “where we’re at” in parameter space – or more simply, the current values of the parameters. Time evolution is captured by superscripts, with <span class="math inline">\(\mathbf{y}^{(k)}\)</span> representing the state of variable <span class="math inline">\(\mathbf{y}\)</span> at the current time, <span class="math inline">\(k\)</span>. The instantaneous velocity at time <span class="math inline">\(k\)</span> is just what is measured by the gradient, <span class="math inline">\(\mathbf{g}^{(k)}\)</span>. But in updating position, we won’t directly make use of it. Instead, at each iteration, the update velocity is a combination of old velocity – weighted by <em>momentum</em> parameter <span class="math inline">\(m\)</span> – and the freshly-computed gradient (weighted by the learning rate). Step one of the two-step logic captures this strategy:</p>
+<p><span id="eq-optimizers-1"><span class="math display">\[
+\mathbf{v}^{(k+1)} = m \ \mathbf{v}^{(k)} + lr \ \mathbf{g}^{(k)}
+\tag{8.1}\]</span></span></p>
+<p>The second step then is the update of <span class="math inline">\(\mathbf{x}\)</span> due to this “compromise” velocity <span class="math inline">\(\mathbf{v}\)</span>.</p>
+<p><span id="eq-optimizers-2"><span class="math display">\[
+\mathbf{x}^{(k+1)} = \mathbf{x}^{(k)} - \mathbf{v}^{(k+1)}
+\tag{8.2}\]</span></span></p>
+<p>Besides the physics analogy, there is another one you may find useful, one that makes use of a concept prominent in time series analysis. If we choose <span class="math inline">\(m\)</span> and <span class="math inline">\(lr\)</span> such that they add up to 1, the result is an <em>exponentially weighted moving average</em>. (While this conceptualization, I think, helps understanding, in practice there is no necessity to have <span class="math inline">\(m\)</span> and <span class="math inline">\(lr\)</span> summing to 1, though).</p>
+<p>Now, let’s return to the non-isotropic paraboloid, and compare SGD with and without momentum. For the latter (bright curve), I’m using a combination of <span class="math inline">\(lr = 0.5\)</span> and <span class="math inline">\(mu = 0.1\)</span>. For SGD – dark curve – the learning rate is the “good one” from the figure above.Definitely, SGD with momentum requires far fewer steps to reach the minimum (<a href="#fig-optimizers-momentum">fig.&nbsp;<span>8.3</span></a>).</p>
+<div id="fig-optimizers-momentum" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/optimizers-momentum.png" class="img-fluid figure-img" alt="A non-isotropic paraboloid, stretched-out widely along the x-axis, but with y-values centered sharply around y = 0. Displayed are two optimization paths, one using steepest descent, one using gradient descent with momentum. With steepest descent, many steps are needed to arrive at the minimum, while gradient descent with momentum needs far fewer steps."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;8.3: SGD with momentum (white), compared with vanilla SGD (gray).</figcaption><p></p>
+</figure>
+</div>
+</section>
+<section id="adagrad" class="level3" data-number="8.3.4">
+<h3 data-number="8.3.4" class="anchored" data-anchor-id="adagrad"><span class="header-section-number">8.3.4</span> Adagrad</h3>
+<p>Can we do better yet? Now, we know that in our running example, it is really the fact that one feature changes much faster than the other that slows down optimization. Having separate learning rates per parameter thus clearly seems like a thing we want. In fact, most of the optimizers popular in deep learning have per-parameter learning rates. But how would you actually determine those?</p>
+<p>This is where different algorithms differ. Adagrad, for example, divides each parameter update by the cumulative sum of its partial derivatives (squared, to be precise), where “cumulative” means we’re keeping track of them since the very first iteration. If we call that “accumulator variable” <span class="math inline">\(s\)</span>, refer to the parameter in question by <span class="math inline">\(i\)</span>, and count iterations using <span class="math inline">\(k\)</span>, this gives us the following formula for keeping <span class="math inline">\(s\)</span> updated:</p>
+<p><span id="eq-optimizers-3"><span class="math display">\[
+s_i^{(k)} = \sum_{j=1}^k (g_i^{(j)})^2
+\tag{8.3}\]</span></span></p>
+<p>(By the way, feel free to skip over the formulas if you don’t like them. I’m doing my best to communicate what they do in words, so you shouldn’t miss out on essential information.)</p>
+<p>Now, the update rule for each parameter subtracts a portion of the gradient, as did vanilla steepest descent – but this time, that portion is determined not just by the (global) learning rate, but also, by the aforementioned cumulative sum of squared partials. The bigger that sum – that is, the bigger the gradients have been during training – the smaller the adjustment:<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
+<p><span id="eq-optimizers-4"><span class="math display">\[
+x_i^{(k+1)} = x_i^{(k)} - \frac{lr}{\epsilon + \sqrt{s_i^{(k)}}}\ g_i^{(k)}\\
+\tag{8.4}\]</span></span></p>
+<p>The net effect of this strategy is that, if a parameter has consistently high gradients, its influence is played down. Parameters with, habitually, tiny gradients, on the other hand, can be sure to receive a lot of attention once that changes.</p>
+<p>With this algorithm, the global learning rate, <span class="math inline">\(lr\)</span>, is of lesser importance. In our running example, it turns out that for best results, we can (and should) use a very high learning rate: 3.7! Here (<a href="#fig-optimizers-adagrad">fig.&nbsp;<span>8.4</span></a>) is the result, again comparing with vanilla gradient descent (gray curve):</p>
+<div id="fig-optimizers-adagrad" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/optimizers-adagrad.png" class="img-fluid figure-img" alt="A non-isotropic paraboloid, stretched-out widely along the x-axis, but with y-values centered sharply around y = 0. Displayed are two optimization paths, one using steepest descent, one using the Adagrad algorithm. With steepest descent, many steps are needed to arrive at the minimum, while Adagrad needs just four steps."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;8.4: Adagrad (white), compared with vanilla SGD (gray).</figcaption><p></p>
+</figure>
+</div>
+<p>In our example, thus, Adagrad performs excellently. But in training a neural network, we tend to run <em>a lot</em> of iterations. Then, with the way gradients are accumulated, the effective learning rate decreases more and more, and a dead end is reached.</p>
+<p>Are there other ways to have individual, per-parameter learning rates?</p>
+</section>
+<section id="rmsprop" class="level3" data-number="8.3.5">
+<h3 data-number="8.3.5" class="anchored" data-anchor-id="rmsprop"><span class="header-section-number">8.3.5</span> RMSProp</h3>
+<p>RMSProp replaces the cumulative-gradient strategy found in Adagrad with a weighted-average one. At each point, the “bookkeeping”, per-parameter variable <span class="math inline">\(s_i\)</span> is a weighted average of its previous value and the previous (squared) gradient:</p>
+<p><span id="eq-optimizers-5"><span class="math display">\[
+s_i^{(k+1)} = \gamma \ s_i^{(k)} + (1-\gamma) \ (g_i^{(k)})^2
+\tag{8.5}\]</span></span></p>
+<p>The update then looks as with Adagrad:</p>
+<p><span id="eq-optimizers-6"><span class="math display">\[
+x_i^{(k+1)} = x_i^{(k)} - \frac{lr}{\epsilon + \sqrt{s_i^{(k)}}}\ g_i^{(k)}\\
+\tag{8.6}\]</span></span></p>
+<p>In this way, each parameter update gets weighted appropriately, without learning slowing down overall.</p>
+<p>Here is the result, again compared against the SGD baseline (<a href="#fig-optimizers-rmsprop">fig.&nbsp;<span>8.5</span></a>):</p>
+<div id="fig-optimizers-rmsprop" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/optimizers-rmsprop.png" class="img-fluid figure-img" alt="A non-isotropic paraboloid, stretched-out widely along the x-axis, but with y-values centered sharply around y = 0. Displayed are two optimization paths, one using steepest descent, one using RMSProp. With steepest descent, many steps are needed to arrive at the minimum, while RMSProp needs just four steps."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;8.5: RMSProp (white), compared with vanilla SGD (gray).</figcaption><p></p>
+</figure>
+</div>
+<p>As of today, RMSProp is one of the most-often used optimizers in deep learning, with probably just Adam - to be introduced next – being more popular.</p>
+</section>
+<section id="adam" class="level3" data-number="8.3.6">
+<h3 data-number="8.3.6" class="anchored" data-anchor-id="adam"><span class="header-section-number">8.3.6</span> Adam</h3>
+<p>Adam combines two concepts we’ve already seen: momentum – to keep “on track” – and parameter-dependent updates, to avoid excessive dependence on fast-changing parameters. The logic is like this.<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a></p>
+<p>For one, just like in SGD with momentum, we keep an exponentially weighted average of gradients. Here the weighting coefficient, <span class="math inline">\(\gamma_v\)</span>, is usually set to 0.9.</p>
+<p><span id="eq-optimizers-7"><span class="math display">\[
+v_i^{(k+1)} = \gamma_v \ v_i^{(k)} + (1-\gamma_v) \ g_i^{(k)}
+\tag{8.7}\]</span></span></p>
+<p>Also, like in RMSProp, there is an exponentially weighted average of squared gradients, with weighting coefficient <span class="math inline">\(\gamma_s\)</span> usually set to 0.999.</p>
+<p><span id="eq-optimizers-8"><span class="math display">\[
+s_i^{(k+1)} = \gamma_s \ s_i^{(k)} + (1-\gamma_s) \ (g_i^{(k)})^2
+\tag{8.8}\]</span></span></p>
+<p>The parameter updates now make use of that information in the following way. The velocity determines the direction of the update, while both velocity and magnitude of gradients (together with the learning rate, <span class="math inline">\(lr\)</span>) determine its size:</p>
+<p><span id="eq-optimizers-9"><span class="math display">\[
+x_i^{(k+1)} = x_i^{(k)} - \frac{lr \
+v_i^{(k+1)}}{\epsilon + \sqrt{s_i^{(k+1)}}}\ \\
+\tag{8.9}\]</span></span></p>
+<p>Let’s conclude this chapter by testing Adam on our running example (<a href="#fig-optimizers-adam">fig.&nbsp;<span>8.6</span></a>).</p>
+<div id="fig-optimizers-adam" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/optimizers-adam.png" class="img-fluid figure-img" alt="A non-isotropic paraboloid, stretched-out widely along the x-axis, but with y-values centered sharply around y = 0. Displayed are two optimization paths, one using steepest descent, one using Adam. With steepest descent, many steps are needed to arrive at the minimum, while Adam needs four steps only."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;8.6: Adam (white), compared with vanilla SGD (gray).</figcaption><p></p>
+</figure>
+</div>
+<p>Next, we head on to loss functions, the last building block to look at before we re-factor the regression network and function minimization examples to benefit from <code>torch</code> modules and optimizers.</p>
+
+
+</section>
+</section>
+<section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn1"><p>Here <span class="math inline">\(\epsilon\)</span> is just a tiny value added to avoid division by zero.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>Actual implementations usually contain an additional step, but there is no need to go into details here.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./modules.html" class="pagination-link">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Modules</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./loss_functions.html" class="pagination-link">
+        <span class="nav-page-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Loss functions</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+</body></html>

@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-99.9.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Deep Learning and Scientific Computing with R torch - 17&nbsp; Speeding up training</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./image_classification_2.html" rel="next">
+<link href="./overfitting.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./dl_overview.html">Deep learning with torch</a></li><li class="breadcrumb-item"><a href="./training_efficiency.html"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Speeding up training</span></a></li></ol></nav>
+      <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+      </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Deep Learning and Scientific Computing with R torch</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">Getting familiar with torch</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./basics_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Overview</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./what_is_torch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">On <code>torch</code>, and how to get it</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./tensors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Tensors</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Autograd</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optim_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Function minimization with <em>autograd</em></span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./network_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">A neural network from scratch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./modules.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Modules</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optimizers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Optimizers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./loss_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Loss functions</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optim_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Function minimization with L-BFGS</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./network_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Modularizing the neural network</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">Deep learning with torch</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./dl_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Overview</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Loading data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./training_with_luz.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Training with luz</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./image_classification_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">A first go at image classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./overfitting.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Making models generalize</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./training_efficiency.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Speeding up training</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./image_classification_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Image classification, take two: Improving performance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./image_segmentation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Image segmentation</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./tabular_data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Tabular data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Time series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./audio_classification.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Audio classification</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">Other things to do with torch: Matrices, Fourier Transform, and Wavelets</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./other_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Overview</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./matrix_computations_leastsquares.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Matrix computations: Least-squares problems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./matrix_computations_convolution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Matrix computations: Convolution</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./fourier_transform_dft.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Exploring the Discrete Fourier Transform (DFT)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./fourier_transform_fft.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">The Fast Fourier Transform (FFT)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wavelets.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Wavelets</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#batch-normalization" id="toc-batch-normalization" class="nav-link active" data-scroll-target="#batch-normalization"><span class="header-section-number">17.1</span> Batch normalization</a></li>
+  <li><a href="#dynamic-learning-rates" id="toc-dynamic-learning-rates" class="nav-link" data-scroll-target="#dynamic-learning-rates"><span class="header-section-number">17.2</span> Dynamic learning rates</a>
+  <ul class="collapse">
+  <li><a href="#learning-rate-finder" id="toc-learning-rate-finder" class="nav-link" data-scroll-target="#learning-rate-finder"><span class="header-section-number">17.2.1</span> Learning rate finder</a></li>
+  <li><a href="#learning-rate-schedulers" id="toc-learning-rate-schedulers" class="nav-link" data-scroll-target="#learning-rate-schedulers"><span class="header-section-number">17.2.2</span> Learning rate schedulers</a></li>
+  </ul></li>
+  <li><a href="#transfer-learning" id="toc-transfer-learning" class="nav-link" data-scroll-target="#transfer-learning"><span class="header-section-number">17.3</span> Transfer learning</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span id="sec:training_efficiency" class="quarto-section-identifier"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Speeding up training</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<p>You could say that the topics discussed in this and the preceding chapter relate like the non-negotiable and the desirable. Generalization, the ability to abstract over individual instances, is a <em>sine qua non</em> of a good model; however, we need to arrive at such a model in reasonable time (where reasonable means very different things in different contexts).</p>
+<p>This time, in presenting techniques I’ll follow a different strategy, ordering them not by stages in the workflow, but by increasing generality. We’ll be looking at three very different, very successful (each in its own way) ideas:</p>
+<ol type="1">
+<li><p>Batch normalization. <em>Batchnorm</em> – to introduce a popular abbreviation – layers are added to a model to stabilize and, in consequence, speed up training.</p></li>
+<li><p>Determining a good learning rate upfront, and dynamically varying it during training. As you might remember from our experiments with optimization, the learning rate has an enormous impact on training speed and stability.</p></li>
+<li><p>Transfer learning. Applied to neural networks, the term commonly refers to using pre-trained models for feature detection, and making use of those features in a downstream task.</p></li>
+</ol>
+<section id="batch-normalization" class="level2" data-number="17.1">
+<h2 data-number="17.1" class="anchored" data-anchor-id="batch-normalization"><span class="header-section-number">17.1</span> Batch normalization</h2>
+<p>The idea behind batch normalization (<span class="citation" data-cites="ioffe2015batch">Ioffe and Szegedy (<a href="references.html#ref-ioffe2015batch" role="doc-biblioref">2015</a>)</span>) directly follows from the basic mechanism of backpropagation.</p>
+<p>In backpropagation, each layer’s weights are adapted, from the very last to the very first. Now, let’s focus on layer 17. When the time comes for the next forward pass, it will have updated its weights in a way that made sense, given the previous batch. However – the layer right before it will also have updated its weights. As will the one preceding its predecessor, the one before that … you get the picture. And so, due to <em>all prior layers now handling their inputs differently</em>, layer 17 will not quite get what it expects. In consequence, the strategy that seemed optimal before might not be.</p>
+<p>While the problem per se is algorithm-inherent, it is more likely to surface the deeper the model. Due to the resulting instability, you need to train with lower learning rates. And this, in turn, means that training will take more time.</p>
+<p>The solution Ioffe and Szegedy proposed was the following. At each pass, and for every layer, normalize the activations. If that were all, however, some sort of levelling would occur. That’s because each layer now has to adjust its activations so they have a mean of zero and a standard deviation of one. In fact, such a requirement would not just act as an equalizer <em>between</em> layers, but also, <em>within</em>: meaning, it would make it harder, for each individual layer, to create sharp internal distinctions.</p>
+<p>For that reason, mean and standard deviation are not simply computed, but <em>learned</em>. In other words, they become <em>model parameters</em>.</p>
+<p>So far, we’ve been talking about this conceptually, suggesting an implementation where each layer took care of this itself. This is not how it’s implemented, however. Rather, we have dedicated layers, <em>batchnorm</em> layers, that normalize and re-scale their inputs. It is them who have mean and standard deviation as learnable parameters.</p>
+<p>To use batch normalization in our MNIST example, we intersperse batchnorm layers throughout the network, one after each convolution block. There are three types of them, one for each of one-, two-, and three-dimensional inputs (time series, images, and video, say). All of them compute statistics individually per channel, and the number of input channels is the only required argument to their constructors.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(torch)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(torchvision)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(luz)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>convnet <span class="ot">&lt;-</span> <span class="fu">nn_module</span>(</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">"convnet"</span>,</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">initialize =</span> <span class="cf">function</span>() {</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># nn_conv2d(in_channels, out_channels, kernel_size, stride)</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>conv1 <span class="ot">&lt;-</span> <span class="fu">nn_conv2d</span>(<span class="dv">1</span>, <span class="dv">32</span>, <span class="dv">3</span>, <span class="dv">1</span>)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>conv2 <span class="ot">&lt;-</span> <span class="fu">nn_conv2d</span>(<span class="dv">32</span>, <span class="dv">64</span>, <span class="dv">3</span>, <span class="dv">2</span>)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>conv3 <span class="ot">&lt;-</span> <span class="fu">nn_conv2d</span>(<span class="dv">64</span>, <span class="dv">128</span>, <span class="dv">3</span>, <span class="dv">1</span>)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>conv4 <span class="ot">&lt;-</span> <span class="fu">nn_conv2d</span>(<span class="dv">128</span>, <span class="dv">256</span>, <span class="dv">3</span>, <span class="dv">2</span>)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>conv5 <span class="ot">&lt;-</span> <span class="fu">nn_conv2d</span>(<span class="dv">256</span>, <span class="dv">10</span>, <span class="dv">3</span>, <span class="dv">2</span>)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>bn1 <span class="ot">&lt;-</span> <span class="fu">nn_batch_norm2d</span>(<span class="dv">32</span>)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>bn2 <span class="ot">&lt;-</span> <span class="fu">nn_batch_norm2d</span>(<span class="dv">64</span>)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>bn3 <span class="ot">&lt;-</span> <span class="fu">nn_batch_norm2d</span>(<span class="dv">128</span>)</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>bn4 <span class="ot">&lt;-</span> <span class="fu">nn_batch_norm2d</span>(<span class="dv">256</span>)</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>  },</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">forward =</span> <span class="cf">function</span>(x) {</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    x <span class="sc">%&gt;%</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">conv1</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_relu</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">bn1</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">conv2</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_relu</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">bn2</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">conv3</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_relu</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">bn3</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">conv4</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nn_relu</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">bn4</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">conv5</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>      <span class="fu">torch_squeeze</span>()</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>One thing you may be wondering though: What happens during testing? The whole notion of testing would be carried to absurdity, were we to apply the same logic there as well. Instead, during evaluation we use the mean and standard deviation determined on the training set. So, batch normalization shares with dropout the fact that they behave differently across phases.</p>
+<p>Batch normalization can be stunningly successful, especially in image processing. It’s a technique you should always consider. What’s more, it has often been found to help with generalization, as well.</p>
+</section>
+<section id="dynamic-learning-rates" class="level2" data-number="17.2">
+<h2 data-number="17.2" class="anchored" data-anchor-id="dynamic-learning-rates"><span class="header-section-number">17.2</span> Dynamic learning rates</h2>
+<p>You won’t be surprised to hear that the learning rate is central to training performance. In backpropagation, layer weights are modified in a direction given by the current loss; the learning rate affects the size of the update.</p>
+<p>With very small updates, the network might move in the right direction, to eventually arrive at a satisfying local minimum of the loss function. But the journey will be long. The bigger the updates, on the other hand, the likelier it gets that it’ll “jump over” that minimum. Imagine moving down one leg of a parabola. Maybe the update is so big that we don’t just end up on the other leg (with equivalent loss), but at a “higher” place (loss) even. Then the next update will send us back to the other leg, to a yet higher location. It won’t take long until loss becomes infinite – the dreaded <code>NaN</code>, in R.</p>
+<p>The goal is easily stated: We’d like to train with the highest-viable learning rate, while avoiding to ever “overshoot”. There are two aspects to this.</p>
+<p>First, we should know what would constitute too high a rate. To that purpose, we use something called a <em>learning rate finder</em>. This technique owes a lot of its popularity to the <a href="https://docs.fast.ai">fast.ai</a> library, and the deep learning classes taught by its creators. The learning rate finder gets called once, before training proper.</p>
+<p>Second, we want to organize training in a way that at each time, the optimal learning rate is used. Views differ on what <em>is</em> an optimal, stage-dependent rate. <code>torch</code> offers a set of so-called <em>learning rate schedulers</em> implementing various widely-established techniques. Schedulers differ not just in strategy, but also, in how often the learning rate is adapted.</p>
+<section id="learning-rate-finder" class="level3" data-number="17.2.1">
+<h3 data-number="17.2.1" class="anchored" data-anchor-id="learning-rate-finder"><span class="header-section-number">17.2.1</span> Learning rate finder</h3>
+<p>The idea of the learning rate finder is the following. You train the network for a single epoch, starting with a very low rate. Looping through the batches, you keep increasing it, until you arrive at a very high value. During the loop, you keep track of rates as well as corresponding losses. Experiment finished, you plot rates and losses against each other. You then pick a rate lower, but not very much lower, than the one at which loss was minimal. The recommendation usually is to choose a value one order of magnitude smaller than the one at minimum. For example, if the minimum occurred at <code>0.01</code>, you would go with <code>0.001</code>.</p>
+<p>Nicely, we don’t need to code this ourselves: <code>luz::lr_finder()</code> will run the experiment for us. All we need to do is inspect the resulting graph – and make the decision!</p>
+<p>To demonstrate, let’s first copy some prerequisites from the last chapter. We use MNIST, with data augmentation. Model-wise, we build on the default version of the CNN, and add in batch normalization. <code>lr_finder()</code> then expects the model to have been <code>setup()</code> with a loss function and an optimizer:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(torch)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(torchvision)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(luz)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>dir <span class="ot">&lt;-</span> <span class="st">"~/.torch-datasets"</span> </span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>train_ds <span class="ot">&lt;-</span> <span class="fu">mnist_dataset</span>(</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  dir,</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">download =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">transform =</span> . <span class="sc">%&gt;%</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">transform_to_tensor</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">transform_random_affine</span>(</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>      <span class="at">degrees =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">45</span>, <span class="dv">45</span>), <span class="at">translate =</span> <span class="fu">c</span>(<span class="fl">0.1</span>, <span class="fl">0.1</span>)</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>train_dl <span class="ot">&lt;-</span> <span class="fu">dataloader</span>(train_ds, <span class="at">batch_size =</span> <span class="dv">128</span>, <span class="at">shuffle =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>valid_ds <span class="ot">&lt;-</span> <span class="fu">mnist_dataset</span>(</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>  dir,</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">train =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">transform =</span> transform_to_tensor</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>valid_dl <span class="ot">&lt;-</span> <span class="fu">dataloader</span>(valid_ds, <span class="at">batch_size =</span> <span class="dv">128</span>)</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>convnet <span class="ot">&lt;-</span> <span class="fu">nn_module</span>(</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>  <span class="st">"convnet"</span>,</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">initialize =</span> <span class="cf">function</span>() {</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>    <span class="co"># nn_conv2d(in_channels, out_channels, kernel_size, stride)</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>conv1 <span class="ot">&lt;-</span> <span class="fu">nn_conv2d</span>(<span class="dv">1</span>, <span class="dv">32</span>, <span class="dv">3</span>, <span class="dv">1</span>)</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>conv2 <span class="ot">&lt;-</span> <span class="fu">nn_conv2d</span>(<span class="dv">32</span>, <span class="dv">64</span>, <span class="dv">3</span>, <span class="dv">2</span>)</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>conv3 <span class="ot">&lt;-</span> <span class="fu">nn_conv2d</span>(<span class="dv">64</span>, <span class="dv">128</span>, <span class="dv">3</span>, <span class="dv">1</span>)</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>conv4 <span class="ot">&lt;-</span> <span class="fu">nn_conv2d</span>(<span class="dv">128</span>, <span class="dv">256</span>, <span class="dv">3</span>, <span class="dv">2</span>)</span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>conv5 <span class="ot">&lt;-</span> <span class="fu">nn_conv2d</span>(<span class="dv">256</span>, <span class="dv">10</span>, <span class="dv">3</span>, <span class="dv">2</span>)</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>bn1 <span class="ot">&lt;-</span> <span class="fu">nn_batch_norm2d</span>(<span class="dv">32</span>)</span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>bn2 <span class="ot">&lt;-</span> <span class="fu">nn_batch_norm2d</span>(<span class="dv">64</span>)</span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>bn3 <span class="ot">&lt;-</span> <span class="fu">nn_batch_norm2d</span>(<span class="dv">128</span>)</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>bn4 <span class="ot">&lt;-</span> <span class="fu">nn_batch_norm2d</span>(<span class="dv">256</span>)</span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>  },</span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>  <span class="at">forward =</span> <span class="cf">function</span>(x) {</span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>    x <span class="sc">%&gt;%</span></span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">conv1</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nnf_relu</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">bn1</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">conv2</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nnf_relu</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">bn2</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">conv3</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nnf_relu</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">bn3</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">conv4</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nnf_relu</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">bn4</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">conv5</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>      <span class="fu">torch_squeeze</span>()</span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> convnet <span class="sc">%&gt;%</span></span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>  <span class="fu">setup</span>(</span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>    <span class="at">loss =</span> <span class="fu">nn_cross_entropy_loss</span>(),</span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a>    <span class="at">optimizer =</span> optim_adam,</span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>    <span class="at">metrics =</span> <span class="fu">list</span>(<span class="fu">luz_metric_accuracy</span>())</span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>    )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>When called with default parameters, <code>lr_finder()</code> will start with a learning rate of <code>1e-7</code>, and increase that, over one hundred steps, until it arrives at <code>0.1</code>. All of these values – minimum learning rate, number of steps, and maximum learning rate – can be modified. For MNIST, I knew that higher learning rates should be feasible; so I shifted that range a bit to the right:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>rates_and_losses <span class="ot">&lt;-</span> model <span class="sc">%&gt;%</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lr_finder</span>(train_dl, <span class="at">start_lr =</span> <span class="fl">0.0001</span>, <span class="at">end_lr =</span> <span class="fl">0.3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Plotting the recorded losses against their rates, we get both the exact values (one for each of the steps), and an exponentially-smoothed version (<a href="#fig-efficiency-mnist-lr-finder">fig.&nbsp;<span>17.1</span></a>).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>rates_and_losses <span class="sc">%&gt;%</span> <span class="fu">plot</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-efficiency-mnist-lr-finder" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/efficiency-mnist-lr-finder.png" class="quarto-discovered-preview-image img-fluid figure-img" alt="A curve that, from left to right, first descends slowly (until about x=0.01), then begins to rise a little bit, while also getting more variable, and finally (at about x=0.5) starts to rise very sharply."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;17.1: Output of <code>luz</code>’s learning rate finder, run on MNIST.</figcaption><p></p>
+</figure>
+</div>
+<p>Here, we see that when rates exceed a value of about 0.01, losses become noisy, and increase. The definitive explosion, though, seems to be triggered only when the rate surpasses 0.1. In consequence, you might decide to not exactly follow the “one order of magnitude” recommendation, and try a learning rate of 0.01 – at least in case you do what I’ll be doing in the next section, namely, use the so-determined rate not as a fixed-in-time value, but as a maximal one.</p>
+</section>
+<section id="learning-rate-schedulers" class="level3" data-number="17.2.2">
+<h3 data-number="17.2.2" class="anchored" data-anchor-id="learning-rate-schedulers"><span class="header-section-number">17.2.2</span> Learning rate schedulers</h3>
+<p>Once we have an idea where to upper-bound the learning rate, we can make use of one of <code>torch</code>’s learning rate schedulers to orchestrate rates over training. We will decide on a scheduler object, and pass that to a dedicated <code>luz</code> callback: <code>callback_lr_scheduler()</code>.</p>
+<p>Classically, a popular, intuitively appealing scheme used to be the following. In early stages of training, try a reasonably high learning rate, in order to make quick progress; once that has happened, though, slow down, making sure you don’t zig-zag around (and away from) a presumably-found local minimum.</p>
+<p>In the meantime, more sophisticated schemes have been developed.</p>
+<p>One family of ideas keeps periodically turning up and down the learning rate. Members of this family are known as, for example, “cyclical learning rates” (<span class="citation" data-cites="Smith15a">Smith (<a href="references.html#ref-Smith15a" role="doc-biblioref">2015</a>)</span>), or (some form of) “annealing with restarts” (e.g., <span class="citation" data-cites="LoshchilovH16a">Loshchilov and Hutter (<a href="references.html#ref-LoshchilovH16a" role="doc-biblioref">2016</a>)</span>). What differs between members of the family is the shape of the resulting learning rate curve, and the frequency of restarts (meaning, how often you turn up the rate again, to begin a new period of descent). In <code>torch</code>, popular representatives of this family are, for example, <code>lr_cyclic()</code> and <code>lr_cosine_annealing_warm_restarts()</code>.</p>
+<p>A very different approach is represented by the <em>one-cycle</em> learning rate strategy (<span class="citation" data-cites="abs-1708-07120">Smith and Topin (<a href="references.html#ref-abs-1708-07120" role="doc-biblioref">2017</a>)</span>). In this scheme, we start from some initial – low-ish – learning rate, increase that up to some user-specified maximum, and from there, decrease again, until we’ve arrived at a rate significantly lower than the one we started with. In <code>torch</code>, this is available as <code>lr_one_cycle()</code>, and this is the strategy I was referring to above.</p>
+<p><code>lr_one_cycle()</code> allows for user-side tweaking in a number of ways, and in real-life projects, you may want to play around a bit with its many parameters. Here, we use the defaults. All we need to do, then, is pass in the maximum rate we determined, and decide on how often we want the learning rate to be updated. The logical way seems to be to do it once per batch, something that will happen if we pass in number of epochs and number of steps per epoch.</p>
+<p>In the code snippet below, note that the arguments <code>max_lr</code> , <code>epochs</code>, and <code>steps_per_epoch</code> really “belong to” <code>lr_one_cycle()</code>. We have to pass them to the callback, though, because it is the callback that will instantiate the scheduler.</p>
+<p><code>call_on</code>, however, genuinely forms part of the callback logic. This is a harmless-looking argument that, nevertheless, we need to pay attention to. Schedulers differ in whether their period is defined in epochs, or in batches. <code>lr_one_cycle()</code> “wakes up” once per batch; but there are others – <code>lr_step()</code>, for example - that check whether an update is due once per epoch only. The default value of <code>call_on</code> is <code>on_epoch_end</code>; so for <code>lr_one_cycle()</code>, we have to override the default.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>num_epochs <span class="ot">&lt;-</span> <span class="dv">5</span> </span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># the model has already been setup(), we continue from there</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>fitted <span class="ot">&lt;-</span> model <span class="sc">%&gt;%</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fit</span>(train_dl,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">epochs =</span> num_epochs,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">valid_data =</span> valid_dl,</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">callbacks =</span> <span class="fu">list</span>(</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">luz_callback_lr_scheduler</span>(</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>        lr_one_cycle,</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">max_lr =</span> <span class="fl">0.01</span>,</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">epochs =</span> num_epochs,</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">steps_per_epoch =</span> <span class="fu">length</span>(train_dl),</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>        <span class="at">call_on =</span> <span class="st">"on_batch_end"</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>At this point, we wrap up the topic of learning rate optimization. As with so many things in deep learning, research progresses at a rapid rate, and most likely, new scheduling strategies will continue to be added. Now though, for a total change in scope.</p>
+</section>
+</section>
+<section id="transfer-learning" class="level2" data-number="17.3">
+<h2 data-number="17.3" class="anchored" data-anchor-id="transfer-learning"><span class="header-section-number">17.3</span> Transfer learning</h2>
+<p>Transfer, as a general concept, is what happens when we have learned to do one thing, and benefit from those skills in learning something else. For example, we may have learned how to make some move with our left leg; it will then be easier to learn how to do the same with our right leg. Or, we may have studied Latin and then, found that it helped us a lot in learning French. These, of course, are straightforward examples; analogies between domains and skills can be a lot more subtle.</p>
+<p>In comparison, the typical usage of “transfer learning” in deep learning seems rather narrow, at first glance. Concretely, it refers to making use of huge, highly effective models (often provided as part of some library), that have already been trained, for a long time, on a huge dataset. Typically, you would load the model, remove its output layer, and add on a small-ish sequential module that takes the model’s now-last layer to the kind of output you require. Often, in example tasks, this will go from the broad to the narrow – as in the below example, where we use a model trained on one thousand categories of images to distinguish between ten types of digits.</p>
+<p>But it doesn’t have to be like that. In deep learning, too, models trained on one task can be built upon in tasks that have <em>different</em>, but not necessarily more <em>domain-constrained</em>, requirements. As of today, popular examples for this are found mostly in natural language processing (NLP), a topic we don’t cover in this book. There, you find models trained to predict how a sentence continues – resulting in general “knowledge” about a language – used in logically dependent tasks like translation, question answering, or text summarization. Transfer learning, in that general sense, is something we’ll certainly see more and more of in the near future.</p>
+<p>There is another, very important aspect to the popularity of transfer learning, though. When you build on a pre-trained model, you’ll incorporate all of what it has learned - including its biases and preconceptions. How much that matters, in your context, will depend on what exactly you’re doing. For us, who are classifying digits, it will not matter whether the pre-trained model performs a lot better on cats and dogs than on e-scooters, smart fridges, or garbage cans. But think about this whenever models concern <em>people</em>. Typically, these high-performing models have been trained either on benchmark datasets, or data massively scraped from the web. The former have, historically, been very little concerned with questions of stereotypes and representation. (Hopefully, that will change in the future.) The latter are, by definition, subject to availability bias, as well as idiosyncratic decisions made by the dataset creators. (Hopefully, these circumstances and decisions will have been carefully documented. That is something you’ll need to check out.)</p>
+<p>With our running example, we’ll be in the former category: We’ll be downstream users of a benchmark dataset. The benchmark dataset in question is <a href="https://image-net.org/index.php">ImageNet</a>, the well-known collection of images we already encountered in our first experience with Tiny Imagenet, two chapters ago.</p>
+<p>In <code>torchvision</code>, we find a number of ready-to-use models that have been trained on ImageNet. Among them is ResNet-18 (<span class="citation" data-cites="HeZRS15">He et al. (<a href="references.html#ref-HeZRS15" role="doc-biblioref">2015</a>)</span>). The “Res” in ResNet stands for “residual”, or “residual connection”. Here <em>residual</em> is used, as is common in statistics, to designate an error term. The idea is to have some layers predict, not something entirely new, but the difference between a target and the previous layer’s prediction – the error, so to say. If this sounds confusing, don’t worry. For us, what matters is that due to their architecture, ResNets can afford to be very deep, without becoming excessively hard to train. And that in turn means they’re very performant, and often used as pre-trained feature detectors.</p>
+<p>The first time you use a pre-trained model, its weights are downloaded, and cached in an operating-system-specific location.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>resnet <span class="ot">&lt;-</span> <span class="fu">model_resnet18</span>(<span class="at">pretrained =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>resnet</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>An `nn_module` containing 11,689,512 parameters.
+
+── Modules ───────────────────────────────────────
+• conv1: &lt;nn_conv2d&gt; #9,408 parameters
+• bn1: &lt;nn_batch_norm2d&gt; #128 parameters
+• relu: &lt;nn_relu&gt; #0 parameters
+• maxpool: &lt;nn_max_pool2d&gt; #0 parameters
+• layer1: &lt;nn_sequential&gt; #147,968 parameters
+• layer2: &lt;nn_sequential&gt; #525,568 parameters
+• layer3: &lt;nn_sequential&gt; #2,099,712 parameters
+• layer4: &lt;nn_sequential&gt; #8,393,728 parameters
+• avgpool: &lt;nn_adaptive_avg_pool2d&gt; #0 parameters
+• fc: &lt;nn_linear&gt; #513,000 parameters</code></pre>
+<p>Have a look at the last module, a linear layer:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>resnet<span class="sc">$</span>fc</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>From the weights, we can see that this layer maps tensors with 512 features to ones with 1000 - the thousand different image categories used in the ImageNet challenge. To adapt this model to our purposes, we simply replace the very last layer with one that outputs feature vectors of length ten:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>resnet<span class="sc">$</span>fc <span class="ot">&lt;-</span> <span class="fu">nn_linear</span>(resnet<span class="sc">$</span>fc<span class="sc">$</span>in_features, <span class="dv">10</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>resnet<span class="sc">$</span>fc</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>An `nn_module` containing 5,130 parameters.
+
+── Parameters ───────────────────────────────────────────────────────────────────────────────────────────────
+• weight: Float [1:10, 1:512]
+• bias: Float [1:10]</code></pre>
+<p>What will happen if we now train the modified model on MNIST? Training will progress with the speed of a Zenonian tortoise, since gradients need to be propagated across a huge network. Not only is that a waste of time; it is useless, as well. It could, if we were very patient, even be harmful: We could destroy the intricate feature hierarchy learned by the pre-trained model. Of course, in classifying digits we will make use of just a tiny subset of learned higher-order features, but that is not a problem. In any case, with the resources available to mere mortals, we are unlikely to improve on ResNet’s digit-discerning capabilities.</p>
+<p>What we do, thus, is set all layer weights to non-trainable, apart from just that last layer we replaced.</p>
+<p>Putting it all together, we arrive at the following, concise definition of a model:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>convnet <span class="ot">&lt;-</span> <span class="fu">nn_module</span>(</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">initialize =</span> <span class="cf">function</span>() {</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>model <span class="ot">&lt;-</span> <span class="fu">model_resnet18</span>(<span class="at">pretrained =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (par <span class="cf">in</span> self<span class="sc">$</span>parameters) {</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>      par<span class="sc">$</span><span class="fu">requires_grad_</span>(<span class="cn">FALSE</span>)</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>model<span class="sc">$</span>fc <span class="ot">&lt;-</span> <span class="fu">nn_linear</span>(self<span class="sc">$</span>model<span class="sc">$</span>fc<span class="sc">$</span>in_features, <span class="dv">10</span>)</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  },</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">forward =</span> <span class="cf">function</span>(x) {</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span><span class="fu">model</span>(x)</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>This we can now train with <code>luz</code>, like before. There’s just one further step required, and that’s just because I’m using MNIST to illustrate. Since ResNet has been trained on RGB images, its first layer expects three channels, not one. We can work around this by multiplexing the single grayscale channel into three identical ones, using <code>torch_expand()</code>. For important real-life tasks, this may not be an optimal solution; but it will do well enough for MNIST.</p>
+<p>A convenient place to perform the expansion is as part of the data pre-processing pipeline, repeated here in modified form.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>train_ds <span class="ot">&lt;-</span> <span class="fu">mnist_dataset</span>(</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  dir,</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">download =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">transform =</span> . <span class="sc">%&gt;%</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">transform_to_tensor</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    (<span class="cf">function</span>(x) x<span class="sc">$</span><span class="fu">expand</span>(<span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">28</span>, <span class="dv">28</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">transform_random_affine</span>(</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">degrees =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">45</span>, <span class="dv">45</span>), <span class="at">translate =</span> <span class="fu">c</span>(<span class="fl">0.1</span>, <span class="fl">0.1</span>)</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>train_dl <span class="ot">&lt;-</span> <span class="fu">dataloader</span>(</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>  train_ds,</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">batch_size =</span> <span class="dv">128</span>,</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">shuffle =</span> <span class="cn">TRUE</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>valid_ds <span class="ot">&lt;-</span> <span class="fu">mnist_dataset</span>(</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>  dir,</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">train =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">transform =</span> . <span class="sc">%&gt;%</span></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>    transform_to_tensor <span class="sc">%&gt;%</span></span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>    (<span class="cf">function</span>(x) x<span class="sc">$</span><span class="fu">expand</span>(<span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">28</span>, <span class="dv">28</span>)))</span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a>valid_dl <span class="ot">&lt;-</span> <span class="fu">dataloader</span>(valid_ds, <span class="at">batch_size =</span> <span class="dv">128</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The code for training then looks as usual.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> convnet <span class="sc">%&gt;%</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">setup</span>(</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">loss =</span> <span class="fu">nn_cross_entropy_loss</span>(),</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">optimizer =</span> optim_adam,</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">metrics =</span> <span class="fu">list</span>(<span class="fu">luz_metric_accuracy</span>())</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">%&gt;%</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fit</span>(train_dl,</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">epochs =</span> <span class="dv">5</span>,</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">valid_data =</span> valid_dl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Before we wrap up both section and chapter, one additional comment. The way we proceeded, above – replacing the very last layer with a single module outputting the final scores – is just the easiest, most straightforward thing to do.</p>
+<p>For MNIST, this is good enough. Maybe, on inspection, we’d find that single digits already form part of ResNet’s feature hierarchy; but even if not, a linear layer with ~ 5000 parameters should suffice to learn them. However, the more there is “still to be learned” – equivalently, the more either dataset or task differ from what was used (done, resp.) in model pre-training – the more powerful a sub-module we will want to chain on. We’ll see an example of this in the next chapter.</p>
+
+
+<div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
+<div id="ref-HeZRS15" class="csl-entry" role="listitem">
+He, Kaiming, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. 2015. <span>“Deep Residual Learning for Image Recognition.”</span> <em>CoRR</em> abs/1512.03385. <a href="http://arxiv.org/abs/1512.03385">http://arxiv.org/abs/1512.03385</a>.
+</div>
+<div id="ref-ioffe2015batch" class="csl-entry" role="listitem">
+Ioffe, Sergey, and Christian Szegedy. 2015. <span>“Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift.”</span> <a href="https://arxiv.org/abs/1502.03167">https://arxiv.org/abs/1502.03167</a>.
+</div>
+<div id="ref-LoshchilovH16a" class="csl-entry" role="listitem">
+Loshchilov, Ilya, and Frank Hutter. 2016. <span>“<span>SGDR:</span> Stochastic Gradient Descent with Restarts.”</span> <em>CoRR</em> abs/1608.03983. <a href="http://arxiv.org/abs/1608.03983">http://arxiv.org/abs/1608.03983</a>.
+</div>
+<div id="ref-Smith15a" class="csl-entry" role="listitem">
+Smith, Leslie N. 2015. <span>“No More Pesky Learning Rate Guessing Games.”</span> <em>CoRR</em> abs/1506.01186. <a href="http://arxiv.org/abs/1506.01186">http://arxiv.org/abs/1506.01186</a>.
+</div>
+<div id="ref-abs-1708-07120" class="csl-entry" role="listitem">
+Smith, Leslie N., and Nicholay Topin. 2017. <span>“Super-Convergence: Very Fast Training of Residual Networks Using Large Learning Rates.”</span> <em>CoRR</em> abs/1708.07120. <a href="http://arxiv.org/abs/1708.07120">http://arxiv.org/abs/1708.07120</a>.
+</div>
+</div>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./overfitting.html" class="pagination-link">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Making models generalize</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./image_classification_2.html" class="pagination-link">
+        <span class="nav-page-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Image classification, take two: Improving performance</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+</body></html>

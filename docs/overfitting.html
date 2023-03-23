@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-99.9.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Deep Learning and Scientific Computing with R torch - 16&nbsp; Making models generalize</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./training_efficiency.html" rel="next">
+<link href="./image_classification_1.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./dl_overview.html">Deep learning with torch</a></li><li class="breadcrumb-item"><a href="./overfitting.html"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Making models generalize</span></a></li></ol></nav>
+      <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+      </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Deep Learning and Scientific Computing with R torch</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">Getting familiar with torch</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./basics_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Overview</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./what_is_torch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">On <code>torch</code>, and how to get it</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./tensors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Tensors</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Autograd</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optim_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Function minimization with <em>autograd</em></span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./network_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">A neural network from scratch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./modules.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Modules</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optimizers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Optimizers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./loss_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Loss functions</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optim_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Function minimization with L-BFGS</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./network_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Modularizing the neural network</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">Deep learning with torch</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./dl_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Overview</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Loading data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./training_with_luz.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Training with luz</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./image_classification_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">A first go at image classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./overfitting.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Making models generalize</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./training_efficiency.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Speeding up training</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./image_classification_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Image classification, take two: Improving performance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./image_segmentation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Image segmentation</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./tabular_data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Tabular data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Time series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./audio_classification.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Audio classification</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">Other things to do with torch: Matrices, Fourier Transform, and Wavelets</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./other_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Overview</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./matrix_computations_leastsquares.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Matrix computations: Least-squares problems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./matrix_computations_convolution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Matrix computations: Convolution</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./fourier_transform_dft.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Exploring the Discrete Fourier Transform (DFT)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./fourier_transform_fft.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">The Fast Fourier Transform (FFT)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wavelets.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Wavelets</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-royal-road-more-and-more-representative-data" id="toc-the-royal-road-more-and-more-representative-data" class="nav-link active" data-scroll-target="#the-royal-road-more-and-more-representative-data"><span class="header-section-number">16.1</span> The royal road: more – and more representative! – data</a></li>
+  <li><a href="#pre-processing-stage-data-augmentation" id="toc-pre-processing-stage-data-augmentation" class="nav-link" data-scroll-target="#pre-processing-stage-data-augmentation"><span class="header-section-number">16.2</span> Pre-processing stage: Data augmentation</a>
+  <ul class="collapse">
+  <li><a href="#classic-data-augmentation" id="toc-classic-data-augmentation" class="nav-link" data-scroll-target="#classic-data-augmentation"><span class="header-section-number">16.2.1</span> Classic data augmentation</a></li>
+  <li><a href="#mixup" id="toc-mixup" class="nav-link" data-scroll-target="#mixup"><span class="header-section-number">16.2.2</span> Mixup</a></li>
+  </ul></li>
+  <li><a href="#modeling-stage-dropout-and-regularization" id="toc-modeling-stage-dropout-and-regularization" class="nav-link" data-scroll-target="#modeling-stage-dropout-and-regularization"><span class="header-section-number">16.3</span> Modeling stage: dropout and regularization</a>
+  <ul class="collapse">
+  <li><a href="#dropout" id="toc-dropout" class="nav-link" data-scroll-target="#dropout"><span class="header-section-number">16.3.1</span> Dropout</a></li>
+  <li><a href="#regularization" id="toc-regularization" class="nav-link" data-scroll-target="#regularization"><span class="header-section-number">16.3.2</span> Regularization</a></li>
+  </ul></li>
+  <li><a href="#training-stage-early-stopping" id="toc-training-stage-early-stopping" class="nav-link" data-scroll-target="#training-stage-early-stopping"><span class="header-section-number">16.4</span> Training stage: Early stopping</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span id="sec:overfitting" class="quarto-section-identifier"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Making models generalize</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<p>In deep learning, as in machine learning in general, we face a problem of generalization. The training set is limited, after all. There is no guarantee that what a model has learned generalizes to the “outside world”.</p>
+<p>How big of a problem is this? It depends. When we construct a toy problem ourselves, we can actively make sure that training and test set come from the very same distribution. On the other end of the spectrum are configurations where significant structural disparities are known to exist from the outset. In the latter case, the measures described in this chapter will be useful, but not sufficient to resolve the problem. Instead, expert domain knowledge and appropriate workflow (re-)design will be required.</p>
+<p>Between both extremes, there is a wide range of possibilities. For example:</p>
+<ul>
+<li><p>An image dataset has had all pictures taken using excellent photographic equipment, and as viewed from a 180 degrees angle; but prediction will take place “in the wild”, using cell phones.</p></li>
+<li><p>A application designed to diagnose skin cancer has been trained on white males mostly, but is supposed to be used by people of any gender and/or skin color.</p></li>
+</ul>
+<p>The second example should make clear that lack of generalization (a.k.a. <em>overfitting</em><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>) – is anything but an exclusively technical problem. Insufficient representation, or even <em>lack</em> of representation, is one of the major manifestations of <em>dataset bias</em>. Among the measures intended to prevent overfitting we discuss below, just one – the most important of all – applies to the second scenario. (This book is dedicated to technical topics; but as emphasized in the preface, we all live in a “real world” that is not just extremely complex, but also, fraught with inequality, inequity, and injustice. However strong our technical focus, this is something we should never lose awareness of.)</p>
+<p>The counter-measures I’ll be presenting can be ordered by stage in the machine learning workflow they apply to: data collection, data pre-processing, model definition, and model training. As you’ll be expecting by now, the most important measure, as hinted at above, is to collect more representative data.</p>
+<section id="the-royal-road-more-and-more-representative-data" class="level2" data-number="16.1">
+<h2 data-number="16.1" class="anchored" data-anchor-id="the-royal-road-more-and-more-representative-data"><span class="header-section-number">16.1</span> The royal road: more – and more representative! – data</h2>
+<p>Depending on your situation, you may be forced to work with pre-existing datasets. In that case, you may still have the option of supplementing external sources with data you’ve collected yourself, albeit of lesser quantity.</p>
+<p>In the next chapter, we’ll encounter the technique of <em>transfer learning</em>. Transfer learning means making use of <em>pre-trained</em> models, employing them as feature extractors for your “downstream” task. Often, these models have been trained on huge datasets. In consequence, they are not just “very good at what they do”, but they also generalize to unseen data – <em>provided</em> the new data are similar to those they have been trained on. What if they’re not? For many tasks, it will still be possible to make use of a pre-trained model: Take it the way it comes, and go on training it – but now, adding in the kinds of data you want it to generalize to.</p>
+<p>Of course, being able to add in <em>any</em> data of your own may still be a dream. In that case, all you can do is think hard about how your results will be biased, and be honest about it.</p>
+<p>Now, let’s say you’ve thought it through, and are confident that there are no systematic deficiencies in your training data preventing generalization to use cases in the wild. Or maybe you’ve restricted the application domain of your model as required. Then, if you have a small training set and want it to generalize as much as possible, what can you do?</p>
+</section>
+<section id="pre-processing-stage-data-augmentation" class="level2" data-number="16.2">
+<h2 data-number="16.2" class="anchored" data-anchor-id="pre-processing-stage-data-augmentation"><span class="header-section-number">16.2</span> Pre-processing stage: Data augmentation</h2>
+<p>Data augmentation means taking the data you have and modifying them, so as to force the algorithm to abstract over some things. What things? It depends on the domain operated upon. This should become clear by means of a concrete example.</p>
+<p>In this chapter, I’ll introduce two popular variants of data augmentation: one I’ll refer to as “classic”, the other one going by the name of “mixup”.</p>
+<section id="classic-data-augmentation" class="level3" data-number="16.2.1">
+<h3 data-number="16.2.1" class="anchored" data-anchor-id="classic-data-augmentation"><span class="header-section-number">16.2.1</span> Classic data augmentation</h3>
+<p>Classically, when people talk about (image) data augmentation, it is the following they’re having in mind. You take an image, and apply some random transformation to it. That transformation could be geometric, such as when rotating, translating, or scaling the image. Alternatively, instead of moving things around, the operation could affect the colors, as when changing brightness or saturation. Other options include blurring the image, or, quite the contrary, sharpening it. Technically, you are free to implement whatever algorithm you desire – you don’t have to use any of the (numerous!) transformations provided by <code>torchvision</code>. In practice, though, you’ll likely find much of what you need among the transformations already available.</p>
+<p>In our running example, we’ll work with MNIST, the <em>Hello World</em> of image-classification datasets we’ve already made quick use of before. It contains 70,000 images of the digits <code>0</code> to <code>9</code>, split into training and test sets in a ratio of six to one. Like before, we get the data from <code>torchvision</code>.</p>
+<p>To see how the digits appear without any data augmentation, take a look at the first thirty-two images in the test set (<a href="#fig-overfitting-mnist-test">fig.&nbsp;<span>16.1</span></a>):</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(torch)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(torchvision)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(luz)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>dir <span class="ot">&lt;-</span> <span class="st">"~/.torch-datasets"</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>valid_ds <span class="ot">&lt;-</span> <span class="fu">mnist_dataset</span>(</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  dir,</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">download =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">train =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">transform =</span> transform_to_tensor</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>valid_dl <span class="ot">&lt;-</span> <span class="fu">dataloader</span>(valid_ds, <span class="at">batch_size =</span> <span class="dv">128</span>)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="co"># a convenient way to obtain individual images without </span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="co"># manual iteration</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>test_images <span class="ot">&lt;-</span> coro<span class="sc">::</span><span class="fu">collect</span>(</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>  valid_dl, <span class="dv">1</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>)[[<span class="dv">1</span>]]<span class="sc">$</span>x[<span class="dv">1</span><span class="sc">:</span><span class="dv">32</span>, <span class="dv">1</span>, , ] <span class="sc">%&gt;%</span> <span class="fu">as.array</span>()</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">8</span>), <span class="at">mar =</span> <span class="fu">rep</span>(<span class="dv">0</span>, <span class="dv">4</span>), <span class="at">mai =</span> <span class="fu">rep</span>(<span class="dv">0</span>, <span class="dv">4</span>))</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>test_images <span class="sc">%&gt;%</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>  purrr<span class="sc">::</span><span class="fu">array_tree</span>(<span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>  purrr<span class="sc">::</span><span class="fu">map</span>(as.raster) <span class="sc">%&gt;%</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>  purrr<span class="sc">::</span><span class="fu">iwalk</span>(<span class="sc">~</span> {</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">plot</span>(.x)</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>  })</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-overfitting-mnist-test" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/overfitting-mnist-test.png" class="quarto-discovered-preview-image img-fluid figure-img" alt="Thirty-two digits, standing upright."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;16.1: MNIST: The first thirty-two images in the test set.</figcaption><p></p>
+</figure>
+</div>
+<p>Now, we use the training set to experiment with data augmentation. Like the <code>dogs_vs_cats_dataset()</code> we made use of in the last chapter – in fact, like all <code>torchvision</code> datasets – <code>mnist_dataset()</code> takes a <code>transform</code> argument, allowing you to pass in arbitrary transformations to be performed on the input images. Of the four transformations that appear in the code snippet below, one we have already seen: <code>transform_to_tensor()</code>, used to convert from R <code>double</code>s to <code>torch</code> tensors. The other three, that all share the infix <code>_random_</code>, each trigger non-deterministic data augmentation: be it by flipping the image horizontally (<code>transform_random_horizontal_flip()</code>) or vertically (<code>transform_random_vertical_flip()</code>), or through rotations and translations(<code>transform_random_affine()</code>). In all cases, the amount of distortion is configurable.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>train_ds <span class="ot">&lt;-</span> <span class="fu">mnist_dataset</span>(</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  dir,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">download =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">transform =</span> . <span class="sc">%&gt;%</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">transform_to_tensor</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="co"># flip horizontally, with a probability of 0.5</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">transform_random_horizontal_flip</span>(<span class="at">p =</span> <span class="fl">0.5</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># flip vertically, with a probability of 0.5</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">transform_random_vertical_flip</span>(<span class="at">p =</span> <span class="fl">0.5</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="co"># (1) rotate to the left or the right,</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">#     up to respective angles of 45 degrees</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="co"># (2) translate vertically or horizontally,</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="co">#     not exceeding 10% of total image width/height</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">transform_random_affine</span>(</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>      <span class="at">degrees =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">45</span>, <span class="dv">45</span>),</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>      <span class="at">translate =</span> <span class="fu">c</span>(<span class="fl">0.1</span>, <span class="fl">0.1</span>)</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Again, let’s look at a sample result (<a href="#fig-overfitting-mnist-transforms">fig.&nbsp;<span>16.2</span></a>).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>train_dl <span class="ot">&lt;-</span> <span class="fu">dataloader</span>(</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  train_ds,</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">batch_size =</span> <span class="dv">128</span>,</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">shuffle =</span> <span class="cn">TRUE</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>train_images <span class="ot">&lt;-</span> coro<span class="sc">::</span><span class="fu">collect</span>(</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  train_dl, <span class="dv">1</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>)[[<span class="dv">1</span>]]<span class="sc">$</span>x[<span class="dv">1</span><span class="sc">:</span><span class="dv">32</span>, <span class="dv">1</span>, , ] <span class="sc">%&gt;%</span> <span class="fu">as.array</span>()</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">8</span>), <span class="at">mar =</span> <span class="fu">rep</span>(<span class="dv">0</span>, <span class="dv">4</span>), <span class="at">mai =</span> <span class="fu">rep</span>(<span class="dv">0</span>, <span class="dv">4</span>))</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>train_images <span class="sc">%&gt;%</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>  purrr<span class="sc">::</span><span class="fu">array_tree</span>(<span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>  purrr<span class="sc">::</span><span class="fu">map</span>(as.raster) <span class="sc">%&gt;%</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  purrr<span class="sc">::</span><span class="fu">iwalk</span>(<span class="sc">~</span> {</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">plot</span>(.x)</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>  })</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-overfitting-mnist-transforms" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/overfitting-mnist-transforms.png" class="img-fluid figure-img" alt="Thirty-two digits, standing upright, rotated, translated, and/or flipped horizontally."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;16.2: MNIST, with random rotations, translations, and flips.</figcaption><p></p>
+</figure>
+</div>
+<p>The effects are clearly visible, and the ranges chosen for rotations and translations seem sensible. But let’s think about the flips. Does it actually make <em>sense</em> to include them?</p>
+<p>In general, this would depend on the dataset, and more even, on the task. Think of a cat, comfortably residing on a fluffy sofa. If the cat were looking to the right instead of to the left, it would still be a cat; if it was positioned upside-down, we’d probably assume the image had been loaded incorrectly. Neither transformation would affect its “catness”. It’s different with digits, though. A flipped <span class="math inline">\(1\)</span> is not the same as a <span class="math inline">\(1\)</span>, at least not in a default context. Thus, for MNIST, I’d rather go with rotations and translations only:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>train_ds <span class="ot">&lt;-</span> <span class="fu">mnist_dataset</span>(</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  dir,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">download =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">transform =</span> . <span class="sc">%&gt;%</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">transform_to_tensor</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">transform_random_affine</span>(</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">degrees =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">45</span>, <span class="dv">45</span>), <span class="at">translate =</span> <span class="fu">c</span>(<span class="fl">0.1</span>, <span class="fl">0.1</span>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>train_dl <span class="ot">&lt;-</span> <span class="fu">dataloader</span>(train_ds,</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">batch_size =</span> <span class="dv">128</span>,</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">shuffle =</span> <span class="cn">TRUE</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now, to compare what happens with and without augmentation, you’d separately train a model for both an augmented and a non-augmented version of the training set. Here is an example setup:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>convnet <span class="ot">&lt;-</span> <span class="fu">nn_module</span>(</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"convnet"</span>,</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">initialize =</span> <span class="cf">function</span>() {</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="co"># nn_conv2d(in_channels, out_channels, kernel_size, stride)</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>conv1 <span class="ot">&lt;-</span> <span class="fu">nn_conv2d</span>(<span class="dv">1</span>, <span class="dv">32</span>, <span class="dv">3</span>, <span class="dv">1</span>)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>conv2 <span class="ot">&lt;-</span> <span class="fu">nn_conv2d</span>(<span class="dv">32</span>, <span class="dv">64</span>, <span class="dv">3</span>, <span class="dv">2</span>)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>conv3 <span class="ot">&lt;-</span> <span class="fu">nn_conv2d</span>(<span class="dv">64</span>, <span class="dv">128</span>, <span class="dv">3</span>, <span class="dv">1</span>)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>conv4 <span class="ot">&lt;-</span> <span class="fu">nn_conv2d</span>(<span class="dv">128</span>, <span class="dv">256</span>, <span class="dv">3</span>, <span class="dv">2</span>)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>conv5 <span class="ot">&lt;-</span> <span class="fu">nn_conv2d</span>(<span class="dv">256</span>, <span class="dv">10</span>, <span class="dv">3</span>, <span class="dv">2</span>)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  },</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">forward =</span> <span class="cf">function</span>(x) {</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    x <span class="sc">%&gt;%</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">conv1</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nnf_relu</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">conv2</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nnf_relu</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">conv3</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nnf_relu</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">conv4</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nnf_relu</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">conv5</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>      <span class="fu">torch_squeeze</span>()</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>fitted <span class="ot">&lt;-</span> convnet <span class="sc">%&gt;%</span></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">setup</span>(</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">loss =</span> <span class="fu">nn_cross_entropy_loss</span>(),</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">optimizer =</span> optim_adam,</span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">metrics =</span> <span class="fu">list</span>(</span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>      <span class="fu">luz_metric_accuracy</span>()</span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fit</span>(train_dl, <span class="at">epochs =</span> <span class="dv">5</span>, <span class="at">valid_data =</span> valid_dl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>With MNIST, we have at our disposition a huge training set, and at the same time, we’re dealing with a very homogeneous domain. Those are exactly the conditions where we don’t expect to see much overfitting<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>.</p>
+<p>However, even with MNIST, you’ll notice that with augmentation, as well as the other “overfitting antidotes” to be introduced, it takes a lot longer to achieve better performance on the training than on the test set (if ever there <em>is</em> better performance on the training set!). For example, in the setup described above, with no data augmentation applied, training-set accuracy surpassed that on the test set from the third epoch onwards; whereas with augmentation, there was no sign of overfitting during all five epochs I trained for.</p>
+<p>Next – still in the realm of data augmentation – we look at a technique that is domain-independent; that is, it can be applied to all kinds of data, not just images.</p>
+</section>
+<section id="mixup" class="level3" data-number="16.2.2">
+<h3 data-number="16.2.2" class="anchored" data-anchor-id="mixup"><span class="header-section-number">16.2.2</span> Mixup</h3>
+<p>Classic data augmentation, whatever it may be doing to the entities involved – move them, distort them, blur them – it leaves them <em>intact</em>. A rotated cat is still a cat. <em>Mixup</em> <span class="citation" data-cites="2017arXiv171009412Z">(<a href="references.html#ref-2017arXiv171009412Z" role="doc-biblioref">Zhang et al. 2017</a>)</span>, on the other hand, takes two entities and “mixes them together”. With mixup, we may have something that’s half-cat and half-squirrel. Or rather, in practice, with strongly unequal <em>mixing weights</em> used, ninety percent squirrel and ten percent cat.</p>
+<p>As an idea, mixup generalizes to any domain. We could mix time series, say, or categorical data of any kind. We could also mix numerical data, although it’s not clear why we would do it. After all, mixup is nothing else but linear combination: take two values <span class="math inline">\(x1\)</span> and <span class="math inline">\(x2\)</span>, and construct <span class="math inline">\(x3 = w1 x1 + w2 x2\)</span>, where <span class="math inline">\(w1\)</span> and <span class="math inline">\(w2\)</span> are weights summing to one. In neural networks, linear combination of numerical values (“automatic mixup”) happens all the time, so that normally, we wouldn’t expect “manual mixup” to add much value.</p>
+<p>For visual demonstration, however, images are still best. Starting from MNIST’s test set, we can apply mixup with different weight patterns – equal, very unequal, and somewhere in-between – and see what happens. <code>luz</code> has a function, called <code>nnf_mixup()</code>, that lets you play around with this.</p>
+<p>(By the way, I’m introducing this function just so you can picture (literally!) what is going on. To actually <em>use</em> mixup, all that is required is to pass the appropriate callback to <code>fit()</code>, and let <code>setup()</code> know which loss function you want to use.)</p>
+<p>Besides the input and target batches, <code>nnf_mixup()</code> expects to be passed the <em>mixing weights</em>, one value per batch item. We start with the most “tame” variant: with weights that are very unequal between classes. Every resultant image will be composed, to ninety percent, of the original item at that position, and to ten percent, of a randomly-chosen different one (<a href="#fig-overfitting-mnist-mixup-0.9">fig.&nbsp;<span>16.3</span></a>):</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>first_batch <span class="ot">&lt;-</span> coro<span class="sc">::</span><span class="fu">collect</span>(valid_dl, <span class="dv">1</span>)[[<span class="dv">1</span>]]</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>mixed <span class="ot">&lt;-</span> <span class="fu">nnf_mixup</span>(<span class="at">x =</span> first_batch<span class="sc">$</span>x,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>                   <span class="at">y =</span> first_batch<span class="sc">$</span>y,</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>                   <span class="at">weight =</span> <span class="fu">torch_tensor</span>(<span class="fu">rep</span>(<span class="fl">0.9</span>, <span class="dv">128</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-overfitting-mnist-mixup-0.9" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/overfitting-mnist-mixup-0.9.png" class="img-fluid figure-img" alt="Thirty-two bold and clearly visible digits, each overlayed with another digit, which is barely visible."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;16.3: Mixing up MNIST, with mixing weights of 0.9.</figcaption><p></p>
+</figure>
+</div>
+<p>Do you agree that the mixed-in digits are just barely visible, if at all? Still, the callback’s default configuration results in mixing ratios pretty close to this one. For MNIST, this probably is too cautious a choice. But think of datasets where the objects are less shape-like, less sharp-edged. Mixing two landscapes, at an equal-ish ratio, would result in total gibberish. And here, too, the task plays a role; not just the dataset per se. Mixing apples and oranges one-to-one can make sense if we’re looking for a higher-level concept – a superset, of sorts. But if all we’re looking for is to correctly discern oranges that look a bit like an apple, or apples that have something “orange-y” in them, then a ratio such as 9:1 might be just fine.</p>
+<p>To develop an idea of what would happen for other proportions, let’s successively make the mixing ratio more equal.</p>
+<p>First, here (<a href="#fig-overfitting-mnist-mixup-0.7">fig.&nbsp;<span>16.4</span></a>) is 0.7:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>mixed <span class="ot">&lt;-</span> <span class="fu">nnf_mixup</span>(<span class="at">x =</span> first_batch<span class="sc">$</span>x,</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">y =</span> first_batch<span class="sc">$</span>y,</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>                   <span class="at">weight =</span> <span class="fu">torch_tensor</span>(<span class="fu">rep</span>(<span class="fl">0.7</span>, <span class="dv">128</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-overfitting-mnist-mixup-0.7" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/overfitting-mnist-mixup-0.7.png" class="img-fluid figure-img" alt="Thirty-two bold and rather clearly visible digits, each overlayed with another digit, which is visible but not as easy to classify."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;16.4: Mixing up MNIST, with mixing weights of 0.7.</figcaption><p></p>
+</figure>
+</div>
+<p>And here (<a href="#fig-overfitting-mnist-mixup-0.5">fig.&nbsp;<span>16.5</span></a>), 0.5:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>mixed <span class="ot">&lt;-</span> <span class="fu">nnf_mixup</span>(<span class="at">x =</span> first_batch<span class="sc">$</span>x,</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">y =</span> first_batch<span class="sc">$</span>y,</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>                   <span class="at">weight =</span> <span class="fu">torch_tensor</span>(<span class="fu">rep</span>(<span class="fl">0.5</span>, <span class="dv">128</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-overfitting-mnist-mixup-0.5" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/overfitting-mnist-mixup-0.5.png" class="img-fluid figure-img" alt="Thirty-two digits, each overlayed with another digit, which is displayed with the same intensity."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;16.5: Mixing up MNIST, with mixing weights of 0.5.</figcaption><p></p>
+</figure>
+</div>
+<p>To use mixup while training, all you need to do is:</p>
+<ol type="1">
+<li><p>Add <code>luz_callback_mixup()</code> to the list of callbacks passed to <code>luz::fit()</code>. The callback takes an optional parameter, <code>alpha</code>, used in determining the mixing ratios. I’d recommend starting with the default, though, and start tweaking from there.</p></li>
+<li><p>Wrap the loss you’re using for the task (here, cross entropy) in <code>nn_mixup_loss()</code>.</p></li>
+<li><p>Use the loss, not the accuracy metric, for monitoring training progress, since accuracy in this case is not well defined.</p></li>
+</ol>
+<p>Here is an example:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># redefine the training set to not use augmentation</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>train_ds <span class="ot">&lt;-</span> <span class="fu">mnist_dataset</span>(</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  dir,</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">download =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">transform =</span> transform_to_tensor</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>train_dl <span class="ot">&lt;-</span> <span class="fu">dataloader</span>(train_ds,</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">batch_size =</span> <span class="dv">128</span>,</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">shuffle =</span> <span class="cn">TRUE</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>fitted <span class="ot">&lt;-</span> convnet <span class="sc">%&gt;%</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">setup</span>(</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">loss =</span> <span class="fu">nn_mixup_loss</span>(torch<span class="sc">::</span><span class="fu">nn_cross_entropy_loss</span>()),</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">optimizer =</span> optim_adam</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fit</span>(</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    train_dl,</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">epochs =</span> <span class="dv">5</span>,</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">valid_data =</span> valid_dl,</span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">callbacks =</span> <span class="fu">list</span>(<span class="fu">luz_callback_mixup</span>())</span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Mixup is an appealing technique that makes a lot of intuitive sense. If you feel like, go ahead and experiment with it on different tasks and different types of data.</p>
+<p>Next, we move on to the next stage in the workflow: model definition.</p>
+</section>
+</section>
+<section id="modeling-stage-dropout-and-regularization" class="level2" data-number="16.3">
+<h2 data-number="16.3" class="anchored" data-anchor-id="modeling-stage-dropout-and-regularization"><span class="header-section-number">16.3</span> Modeling stage: dropout and regularization</h2>
+<p>Inside a neural network, there are two kinds of “data”: <em>activations</em> – tensors propagated from one layer to the next – and <em>weights</em>, tensors associated with individual layers. From the two techniques we’ll look at in this section, one (<em>dropout</em>) affects the former; the other (<em>regularization</em>), the latter.</p>
+<section id="dropout" class="level3" data-number="16.3.1">
+<h3 data-number="16.3.1" class="anchored" data-anchor-id="dropout"><span class="header-section-number">16.3.1</span> Dropout</h3>
+<p>Dropout <span class="citation" data-cites="10.5555/2627435.2670313">(<a href="references.html#ref-10.5555/2627435.2670313" role="doc-biblioref">Srivastava et al. 2014</a>)</span> happens during training only. At each forward pass, individual activations – single values in the tensors being passed on – are <em>dropped</em> (meaning: set to zero), with configurable probability. Due to randomness, actual positions of zeroed-out values in a tensor vary from pass to pass.</p>
+<p>Put differently: Dynamically and reversibly, individual inter-neuron connections are “cut off”. Why would this help to avoid overfitting?</p>
+<p>If different connections between neurons could be dropped out at unforeseeable times, the network as a whole had better not get too dependent on cooperation between individual units. But it is just this kind of inter-individual cooperation that results in strong memorization of examples presented during training. If that is made impossible, the network as a whole has to focus on more general features, ones that that emerge from more distributed, more random cooperation. Put differently, we’re introducing <em>randomness</em>, or <em>noise</em>, and no hyper-specialized model will be able to deal with that.</p>
+<p>Application of this technique in <code>torch</code> is very straightforward. A dedicated layer takes care of it: <code>nn_dropout()</code>. By “takes care” I mean:</p>
+<ul>
+<li><p>In its <code>forward()</code> method, the layer checks whether we’re in training or test mode. If the latter, nothing happens.</p></li>
+<li><p>If we’re training, it uses the dropout probability <span class="math inline">\(p\)</span> it’s been initialized with to zero out parts of the input tensor.</p></li>
+<li><p>The partly-zeroed tensor is scaled up by the inverse of <span class="math inline">\(1-p\)</span>, to keep the overall magnitude of the tensor unchanged. The result is then passed on to the next layer.</p></li>
+</ul>
+<p>Here is our convnet from above, with a few dropout layers interspersed:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>convnet <span class="ot">&lt;-</span> <span class="fu">nn_module</span>(</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"convnet"</span>,</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">initialize =</span> <span class="cf">function</span>() {</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># nn_conv2d(in_channels, out_channels, kernel_size, stride)</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>conv1 <span class="ot">&lt;-</span> <span class="fu">nn_conv2d</span>(<span class="dv">1</span>, <span class="dv">32</span>, <span class="dv">3</span>, <span class="dv">1</span>)</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>conv2 <span class="ot">&lt;-</span> <span class="fu">nn_conv2d</span>(<span class="dv">32</span>, <span class="dv">64</span>, <span class="dv">3</span>, <span class="dv">2</span>)</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>conv3 <span class="ot">&lt;-</span> <span class="fu">nn_conv2d</span>(<span class="dv">64</span>, <span class="dv">128</span>, <span class="dv">3</span>, <span class="dv">1</span>)</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>conv4 <span class="ot">&lt;-</span> <span class="fu">nn_conv2d</span>(<span class="dv">128</span>, <span class="dv">256</span>, <span class="dv">3</span>, <span class="dv">2</span>)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>conv5 <span class="ot">&lt;-</span> <span class="fu">nn_conv2d</span>(<span class="dv">256</span>, <span class="dv">10</span>, <span class="dv">3</span>, <span class="dv">2</span>)</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>drop1 <span class="ot">&lt;-</span> <span class="fu">nn_dropout</span>(<span class="at">p =</span> <span class="fl">0.2</span>)</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    self<span class="sc">$</span>drop2 <span class="ot">&lt;-</span> <span class="fu">nn_dropout</span>(<span class="at">p =</span> <span class="fl">0.2</span>)</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>  },</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">forward =</span> <span class="cf">function</span>(x) {</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>    x <span class="sc">%&gt;%</span> </span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">conv1</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nnf_relu</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">conv2</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nnf_relu</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">drop1</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">conv3</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nnf_relu</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">conv4</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>      <span class="fu">nnf_relu</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">drop2</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>      self<span class="sc">$</span><span class="fu">conv5</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a>      <span class="fu">torch_squeeze</span>()</span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>As always, experimentation will help in determining a good dropout rate, as well as the number of dropout layers introduced. You may be wondering, though – how does this technique go together with the data-related ones we presented before?</p>
+<p>In practice (in the “real world”), you would basically always use data augmentation. As to dropout, it probably is <em>the</em> go-to technique in this area. A priori, there is no reason to <em>not</em> use them together – all the more since both are configurable. One way to see it is like this: You have a fixed budget of randomness; every technique you use that adds randomness will take up some of that budget. How do you know if you’ve exceeded it? By seeing no (or insufficient) progress on the training set. There is a clear ranking of priorities here: It’s no use worrying about generalization to the test set as long as the model is not learning at all. The number one requirement always is to get the model to learn in the first place.</p>
+</section>
+<section id="regularization" class="level3" data-number="16.3.2">
+<h3 data-number="16.3.2" class="anchored" data-anchor-id="regularization"><span class="header-section-number">16.3.2</span> Regularization</h3>
+<p>Both dropout and regularization affect how the model’s inner workings, but they are very different in spirit.</p>
+<p>Dropout introduces randomness. Looking for analogies in machine learning overall, it has something in common with ensemble modeling. (By the way, the idea of ensembling is as applicable, in theory, to neural networks, as to other algorithms. It’s just not that popular because training a neural network takes a long time.)</p>
+<p>Regularization, on the other hand, is similar to – regularization. If you know what is meant by this term in machine learning in general, you know what is meant in deep learning. In deep learning, though, it is often referred to by a different name: “weight decay”. Personally, I find this a little misleading. “Decay” seems to hint at some sort of <em>temporal</em> development; in fact, this is exactly its meaning in “learning rate decay”, a training strategy that makes use of decreasing learning rates over time.</p>
+<p>In weight decay, or regularization, however, there’s no dynamics involved at all. Instead, we follow a fixed rule. That rule is: When computing the loss, add to it a quantity proportional to the aggregate size of the weights. The idea is to keep the weights small and homogeneous, to prevent sharp cliffs and canyons in the loss function.</p>
+<p>In deep learning, regularization as a strategy is nowhere as central as data augmentation or dropout, which is why I’m not going to go into great detail. If you want to learn more, check out one of the many great introductions to statistical learning around.</p>
+<p>Among data scientists, regularization probably is most often associated with different variants of linear regression. Variants differ in what they understand by a penalty “proportional” to the weights. In <em>ridge regression</em>, this quantity will be a fraction of the sum of the <em>squared</em> weights; in the <em>Lasso</em>, their absolute values. It is only the former algorithm that is implemented in <code>torch</code>.</p>
+<p>Although semantically, regularization forms part of the “business logic” – which is why I’m listing it in the “model” section – it technically is implemented as part of an optimizer object. All of the classic optimizers – SGD, RMSProp, Adam, and relatives – take a <code>weight_decay</code> argument used to indicate what fraction of the sum of squared weights you’d like to have added to the loss.</p>
+<p>In our example, you’d pass this argument to <code>luz::set_opt_hparams()</code>, like so:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>fitted <span class="ot">&lt;-</span> convnet <span class="sc">%&gt;%</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">setup</span>(</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">loss =</span> <span class="fu">nn_cross_entropy_loss</span>(),</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">optimizer =</span> optim_adam,</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">metrics =</span> <span class="fu">list</span>(<span class="fu">luz_metric_accuracy</span>())</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">%&gt;%</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_opt_hparams</span>(<span class="at">weight_decay =</span> <span class="fl">0.00001</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fit</span>(train_dl, <span class="at">epochs =</span> <span class="dv">5</span>, <span class="at">valid_data =</span> valid_dl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>As already hinted at above, regularization is not seen that often in the context of neural networks. Nevertheless, given the wide range of problems deep learning is applied to, it’s good to be aware of its availability.</p>
+</section>
+</section>
+<section id="training-stage-early-stopping" class="level2" data-number="16.4">
+<h2 data-number="16.4" class="anchored" data-anchor-id="training-stage-early-stopping"><span class="header-section-number">16.4</span> Training stage: Early stopping</h2>
+<p>We conclude this chapter with an example of an anything-but-sophisticated, but very effective training technique: early stopping. So far, in our running example, we’ve always let the model learn for a pre-determined number of epochs. Thanks to the existence of callbacks – those “hooks” into the training process that let you modify “almost everything” dynamically – however, training duration does not have to be fixed from the outset.</p>
+<p>One of several callbacks related to the learning rate – besides, e.g., <code>luz_callback_lr_scheduler()</code> , that allows you to dynamically adjust learning rate while training – <code>luz_callback_early_stopping()</code> will trigger an early exit once some configurable condition is satisfied.</p>
+<p>Called without parameters, it will monitor loss on the validation set, and once validation loss stops decreasing, it will immediately cause training to stop. However, less strict policies are possible. For example, <code>luz_callback_early_stopping(patience = 2)</code> will allow for two consecutive epochs without improvement before triggering an exit.</p>
+<p>To make use of <code>luz_callback_early_stopping()</code>, you add it to the callbacks list in <code>fit()</code>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>fitted <span class="ot">&lt;-</span> convnet <span class="sc">%&gt;%</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">setup</span>(</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">loss =</span> <span class="fu">nn_cross_entropy_loss</span>(),</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">optimizer =</span> optim_adam,</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">metrics =</span> <span class="fu">list</span>(<span class="fu">luz_metric_accuracy</span>())</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fit</span>(train_dl,</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">epochs =</span> <span class="dv">5</span>,</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">valid_data =</span> valid_dl,</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">callbacks =</span> <span class="fu">list</span>(</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>      <span class="fu">luz_callback_early_stopping</span>()</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>In deep learning, early stopping is ubiquitous; it’s hard to imagine why one would <em>not</em> want to use it.</p>
+<p>Having discussed overfitting, we now go on to a complementary aspect of model training: True, we want our models to generalize; but we also want them to learn fast. That’s what the next chapter is dedicated to.</p>
+
+
+<div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
+<div id="ref-10.5555/2627435.2670313" class="csl-entry" role="listitem">
+Srivastava, Nitish, Geoffrey Hinton, Alex Krizhevsky, Ilya Sutskever, and Ruslan Salakhutdinov. 2014. <span>“Dropout: A Simple Way to Prevent Neural Networks from Overfitting.”</span> <em>J. Mach. Learn. Res.</em> 15 (1): 1929–58.
+</div>
+<div id="ref-2017arXiv171009412Z" class="csl-entry" role="listitem">
+Zhang, Hongyi, Moustapha Cisse, Yann N. Dauphin, and David Lopez-Paz. 2017. <span>“<span class="nocase">mixup: Beyond Empirical Risk Minimization</span>.”</span> <em>arXiv e-Prints</em>, October, arXiv:1710.09412. <a href="https://arxiv.org/abs/1710.09412">https://arxiv.org/abs/1710.09412</a>.
+</div>
+</div>
+</section>
+<section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn1"><p>Meaning: “overly fitting” the model to the training data.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>I chose MNIST for this overview because it allows to easily discern the effects of various augmentation techniques (especially the next one we’re going to discuss).<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./image_classification_1.html" class="pagination-link">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">A first go at image classification</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./training_efficiency.html" class="pagination-link">
+        <span class="nav-page-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Speeding up training</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+</body></html>

@@ -1,0 +1,1595 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-99.9.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Deep Learning and Scientific Computing with R torch - 24&nbsp; Matrix computations: Least-squares problems</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./matrix_computations_convolution.html" rel="next">
+<link href="./other_overview.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./other_overview.html">Other things to do with torch: Matrices, Fourier Transform, and Wavelets</a></li><li class="breadcrumb-item"><a href="./matrix_computations_leastsquares.html"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Matrix computations: Least-squares problems</span></a></li></ol></nav>
+      <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+      </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Deep Learning and Scientific Computing with R torch</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">Getting familiar with torch</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./basics_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Overview</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./what_is_torch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">On <code>torch</code>, and how to get it</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./tensors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Tensors</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Autograd</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optim_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Function minimization with <em>autograd</em></span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./network_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">A neural network from scratch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./modules.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Modules</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optimizers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Optimizers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./loss_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Loss functions</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optim_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Function minimization with L-BFGS</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./network_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Modularizing the neural network</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">Deep learning with torch</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./dl_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Overview</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Loading data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./training_with_luz.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Training with luz</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./image_classification_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">A first go at image classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./overfitting.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Making models generalize</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./training_efficiency.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Speeding up training</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./image_classification_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Image classification, take two: Improving performance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./image_segmentation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Image segmentation</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./tabular_data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Tabular data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Time series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./audio_classification.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Audio classification</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">Other things to do with torch: Matrices, Fourier Transform, and Wavelets</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./other_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Overview</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./matrix_computations_leastsquares.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Matrix computations: Least-squares problems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./matrix_computations_convolution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Matrix computations: Convolution</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./fourier_transform_dft.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Exploring the Discrete Fourier Transform (DFT)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./fourier_transform_fft.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">The Fast Fourier Transform (FFT)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wavelets.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Wavelets</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#five-ways-to-do-least-squares" id="toc-five-ways-to-do-least-squares" class="nav-link active" data-scroll-target="#five-ways-to-do-least-squares"><span class="header-section-number">24.1</span> Five ways to do least squares</a></li>
+  <li><a href="#regression-for-weather-prediction" id="toc-regression-for-weather-prediction" class="nav-link" data-scroll-target="#regression-for-weather-prediction"><span class="header-section-number">24.2</span> Regression for weather prediction</a>
+  <ul class="collapse">
+  <li><a href="#least-squares-i-setting-expectations-with-lm" id="toc-least-squares-i-setting-expectations-with-lm" class="nav-link" data-scroll-target="#least-squares-i-setting-expectations-with-lm"><span class="header-section-number">24.2.1</span> Least squares (I): Setting expectations with <code>lm()</code></a></li>
+  <li><a href="#least-squares-ii-using-linalg_lstsq" id="toc-least-squares-ii-using-linalg_lstsq" class="nav-link" data-scroll-target="#least-squares-ii-using-linalg_lstsq"><span class="header-section-number">24.2.2</span> Least squares (II): Using <code>linalg_lstsq()</code></a></li>
+  <li><a href="#interlude-what-if-we-hadnt-standardized-the-data" id="toc-interlude-what-if-we-hadnt-standardized-the-data" class="nav-link" data-scroll-target="#interlude-what-if-we-hadnt-standardized-the-data"><span class="header-section-number">24.2.3</span> Interlude: What if we hadn’t standardized the data?</a></li>
+  <li><a href="#least-squares-iii-the-normal-equations" id="toc-least-squares-iii-the-normal-equations" class="nav-link" data-scroll-target="#least-squares-iii-the-normal-equations"><span class="header-section-number">24.2.4</span> Least squares (III): The normal equations</a></li>
+  <li><a href="#least-squares-iv-cholesky-decomposition" id="toc-least-squares-iv-cholesky-decomposition" class="nav-link" data-scroll-target="#least-squares-iv-cholesky-decomposition"><span class="header-section-number">24.2.5</span> Least squares (IV): Cholesky decomposition</a></li>
+  <li><a href="#least-squares-v-lu-factorization" id="toc-least-squares-v-lu-factorization" class="nav-link" data-scroll-target="#least-squares-v-lu-factorization"><span class="header-section-number">24.2.6</span> Least squares (V): LU factorization</a></li>
+  <li><a href="#least-squares-vi-qr-factorization" id="toc-least-squares-vi-qr-factorization" class="nav-link" data-scroll-target="#least-squares-vi-qr-factorization"><span class="header-section-number">24.2.7</span> Least squares (VI): QR factorization</a></li>
+  <li><a href="#least-squares-vii-singular-value-decomposition-svd" id="toc-least-squares-vii-singular-value-decomposition-svd" class="nav-link" data-scroll-target="#least-squares-vii-singular-value-decomposition-svd"><span class="header-section-number">24.2.8</span> Least squares (VII): Singular Value Decomposition (SVD)</a></li>
+  <li><a href="#checking-execution-times" id="toc-checking-execution-times" class="nav-link" data-scroll-target="#checking-execution-times"><span class="header-section-number">24.2.9</span> Checking execution times</a></li>
+  </ul></li>
+  <li><a href="#a-quick-look-at-stability" id="toc-a-quick-look-at-stability" class="nav-link" data-scroll-target="#a-quick-look-at-stability"><span class="header-section-number">24.3</span> A quick look at stability</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span id="sec:matrix-computations-1" class="quarto-section-identifier"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Matrix computations: Least-squares problems</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<p>In this chapter and the next, we’ll explore what <code>torch</code> lets us do with matrices. Here, we take a look at various ways to solve least-squares problems. The intention is two-fold.</p>
+<p>Firstly, this subject often gets pretty technical, or rather, <em>computational</em>, very fast. Depending on your background (and goals), this may just be what you want; you either know well, or do not care about so much, the underlying concepts. But for some people, a purely technical presentation, one that does not also dwell on the <em>concepts</em>, the abstract ideas underlying the subject, may well fail to convey the fascination, the intellectual attraction it can exert. That’s why, in this chapter, I’ll try to present things in a way that the main ideas don’t get obscured by “computer-sciencey” details (details that are easily found in a number of excellent books, anyway).</p>
+<section id="five-ways-to-do-least-squares" class="level2" data-number="24.1">
+<h2 data-number="24.1" class="anchored" data-anchor-id="five-ways-to-do-least-squares"><span class="header-section-number">24.1</span> Five ways to do least squares</h2>
+<p>How do you compute linear least-squares regression? In R, using <code>lm()</code>; in <code>torch</code>, there is <code>linalg_lstsq()</code>. Where R, sometimes, hides complexity from the user, high-performance computation frameworks like <code>torch</code> tend to ask a bit more up-front effort, be it careful reading of documentation, or playing around some, or both. For example, here is the central piece of documentation for <code>linalg_lstsq()</code>, elaborating on the <code>driver</code> parameter to the function:</p>
+<blockquote class="blockquote">
+<p><code>driver</code> chooses the LAPACK/MAGMA function that will be used.</p>
+<p>For CPU inputs the valid values are ‘gels’, ‘gelsy’, ‘gelsd, ’gelss’.</p>
+<p>For CUDA input, the only valid driver is ‘gels’, which assumes that A is full-rank.</p>
+<p>To choose the best driver on CPU consider:</p>
+<ul>
+<li>If A is well-conditioned (its condition number is not too large), or you do not mind some precision loss:
+<ul>
+<li><p>For a general matrix: ‘gelsy’ (QR with pivoting) (default)</p></li>
+<li><p>If A is full-rank: ‘gels’ (QR)</p></li>
+</ul></li>
+<li>If A is not well-conditioned:
+<ul>
+<li><p>‘gelsd’ (tridiagonal reduction and SVD)</p></li>
+<li><p>But if you run into memory issues: ‘gelss’ (full SVD).</p></li>
+</ul></li>
+</ul>
+</blockquote>
+<p>Whether you’ll need to know this will depend on the problem you’re solving. But if you do, it certainly will help to have an idea what is being talked about there, if only in a high-level way.</p>
+<p>In our example problem below, we’re going to be lucky. All drivers will return the same result – but only once we’ll have applied a “trick”, of sorts. Still, we’ll go on and dig deeper into the various methods used by <code>linalg_lstsq()</code>, as well as a few others of common use. Concretely, we’ll solve least squares:</p>
+<ol type="1">
+<li><p>By means of the so-called <em>normal equations</em>, the most direct way, in the sense that it immediately results from a mathematical statement of the problem.</p></li>
+<li><p>Again, starting from the normal equations, but making use of <em>Cholesky factorization</em> in solving them.</p></li>
+<li><p>Yet again, taking the normal equations for a point of departure, but proceeding by means of <em>LU</em> decomposition.</p></li>
+<li><p>Fourth, employing another type of factorization – <em>QR</em> – that, together with the final one, accounts for the vast majority of decompositions applied “in the real world”. With QR decomposition, the solution algorithm does not start from the normal equations.</p></li>
+<li><p>And fifth and finally, making use of <em>Singular Value Decomposition</em> (SVD). Here, too, the normal equations are not needed.</p></li>
+</ol>
+<p>All methods will first be applied to a real-world dataset, and then, be tested on a benchmark problem well known for its lack of stability.</p>
+</section>
+<section id="regression-for-weather-prediction" class="level2" data-number="24.2">
+<h2 data-number="24.2" class="anchored" data-anchor-id="regression-for-weather-prediction"><span class="header-section-number">24.2</span> Regression for weather prediction</h2>
+<p>The dataset we’ll use is available from the <a href="http://archive.ics.uci.edu/ml/machine-learning-dAtAbases/00514/Bias_correction_ucl.csv">UCI Machine Learning Repository</a>. The way we’ll use it does not quite match the original purpose of collection; instead of forecasting temperature with machine learning, the original study (<span class="citation" data-cites="2019EA000740">Cho et al. (<a href="references.html#ref-2019EA000740" role="doc-biblioref">2020</a>)</span>) really was about bias correction of forecasts obtained from a numerical weather prediction model. But never mind – our focus here is on matrix methods, and the dataset lends itself very well to the kinds of explorations we’re going to do.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">777</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(torch)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">torch_manual_seed</span>(<span class="dv">777</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(zeallot)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>uci <span class="ot">&lt;-</span> <span class="st">"https://archive.ics.uci.edu"</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>ds_path <span class="ot">&lt;-</span> <span class="st">"ml/machine-learning-databases/00514"</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>ds_file <span class="ot">&lt;-</span> <span class="st">"Bias_correction_ucl.csv"</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="co"># download.file(</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="co">#   file.path(uci, ds_path, ds_file),</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="co">#   destfile = "resources/matrix-weather.csv"</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="co"># )</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>weather_df <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"resources/matrix-weather.csv"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">na.omit</span>()</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>weather_df <span class="sc">%&gt;%</span> <span class="fu">glimpse</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>Rows: 7,588
+Columns: 25
+$ station           &lt;dbl&gt; 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,…
+$ Date              &lt;date&gt; 2013-06-30, 2013-06-30,…
+$ Present_Tmax      &lt;dbl&gt; 28.7, 31.9, 31.6, 32.0, 31.4, 31.9,…
+$ Present_Tmin      &lt;dbl&gt; 21.4, 21.6, 23.3, 23.4, 21.9, 23.5,…
+$ LDAPS_RHmin       &lt;dbl&gt; 58.25569, 52.26340, 48.69048,…
+$ LDAPS_RHmax       &lt;dbl&gt; 91.11636, 90.60472, 83.97359,…
+$ LDAPS_Tmax_lapse  &lt;dbl&gt; 28.07410, 29.85069, 30.09129,…
+$ LDAPS_Tmin_lapse  &lt;dbl&gt; 23.00694, 24.03501, 24.56563,…
+$ LDAPS_WS          &lt;dbl&gt; 6.818887, 5.691890, 6.138224,…
+$ LDAPS_LH          &lt;dbl&gt; 69.45181, 51.93745, 20.57305,…
+$ LDAPS_CC1         &lt;dbl&gt; 0.2339475, 0.2255082, 0.2093437,…
+$ LDAPS_CC2         &lt;dbl&gt; 0.2038957, 0.2517714, 0.2574694,…
+$ LDAPS_CC3         &lt;dbl&gt; 0.1616969, 0.1594441, 0.2040915,…
+$ LDAPS_CC4         &lt;dbl&gt; 0.1309282, 0.1277273, 0.1421253,…
+$ LDAPS_PPT1        &lt;dbl&gt; 0.0000000, 0.0000000, 0.0000000,…
+$ LDAPS_PPT2        &lt;dbl&gt; 0.000000, 0.000000, 0.000000,…
+$ LDAPS_PPT3        &lt;dbl&gt; 0.0000000, 0.0000000, 0.0000000,…
+$ LDAPS_PPT4        &lt;dbl&gt; 0.0000000, 0.0000000, 0.0000000,…
+$ lat               &lt;dbl&gt; 37.6046, 37.6046, 37.5776, 37.6450,…
+$ lon               &lt;dbl&gt; 126.991, 127.032, 127.058, 127.022,…
+$ DEM               &lt;dbl&gt; 212.3350, 44.7624, 33.3068, 45.7160,…
+$ Slope             &lt;dbl&gt; 2.7850, 0.5141, 0.2661, 2.5348,…
+$ `Solar radiation` &lt;dbl&gt; 5992.896, 5869.312, 5863.556,…
+$ Next_Tmax         &lt;dbl&gt; 29.1, 30.5, 31.1, 31.7, 31.2, 31.5,…
+$ Next_Tmin         &lt;dbl&gt; 21.2, 22.5, 23.9, 24.3, 22.5, 24.0,…</code></pre>
+<p>The way we’re framing the task, basically everything in the dataset serves (or would serve, if we kept it – more on that below) as a predictor. As target, we’ll use <code>Next_Tmax</code>, the maximal temperature reached on the subsequent day. This means we need to remove <code>Next_Tmin</code> from the set of predictors, as it would make for too powerful of a clue. We’ll do the same for <code>station</code>, the weather station id, and <code>Date</code>. This leaves us with twenty-one predictors, including measurements of actual temperature (<code>Present_Tmax</code>, <code>Present_Tmin</code>), model forecasts of various variables (<code>LDAPS_*</code>), and auxiliary information (<code>lat</code>, <code>lon</code>, and <code>`Solar radiation`</code>, among others).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>weather_df <span class="ot">&lt;-</span> weather_df <span class="sc">%&gt;%</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(station, Next_Tmin, Date)) <span class="sc">%&gt;%</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="at">.fns =</span> scale))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Note how, above, I’ve added a line to <em>standardize</em> the predictors. This is the “trick” I was alluding to above. We’ll talk about why we’re doing this soon.</p>
+<p>For <code>torch</code>, we split up the data into two tensors: a matrix <code>A</code>, containing all predictors, and a vector <code>b</code> that holds the target.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>weather <span class="ot">&lt;-</span> <span class="fu">torch_tensor</span>(weather_df <span class="sc">%&gt;%</span> <span class="fu">as.matrix</span>())</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>A <span class="ot">&lt;-</span> weather[ , <span class="dv">1</span><span class="sc">:-</span><span class="dv">2</span>]</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>b <span class="ot">&lt;-</span> weather[ , <span class="sc">-</span><span class="dv">1</span>]</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(A)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>[1] 7588   21</code></pre>
+<p>Now, first let’s determine the expected output.</p>
+<section id="least-squares-i-setting-expectations-with-lm" class="level3" data-number="24.2.1">
+<h3 data-number="24.2.1" class="anchored" data-anchor-id="least-squares-i-setting-expectations-with-lm"><span class="header-section-number">24.2.1</span> Least squares (I): Setting expectations with <code>lm()</code></h3>
+<p>If there’s a least squares implementation we “believe in”, it surely must be <code>lm()</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lm</span>(Next_Tmax <span class="sc">~</span> . , <span class="at">data =</span> weather_df)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>fit <span class="sc">%&gt;%</span> <span class="fu">summary</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>Call:
+lm(formula = Next_Tmax ~ ., data = weather_df)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-1.94439 -0.27097  0.01407  0.28931  2.04015 
+
+Coefficients:
+                    Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)        2.605e-15  5.390e-03   0.000 1.000000    
+Present_Tmax       1.456e-01  9.049e-03  16.089  &lt; 2e-16 ***
+Present_Tmin       4.029e-03  9.587e-03   0.420 0.674312    
+LDAPS_RHmin        1.166e-01  1.364e-02   8.547  &lt; 2e-16 ***
+LDAPS_RHmax       -8.872e-03  8.045e-03  -1.103 0.270154    
+LDAPS_Tmax_lapse   5.908e-01  1.480e-02  39.905  &lt; 2e-16 ***
+LDAPS_Tmin_lapse   8.376e-02  1.463e-02   5.726 1.07e-08 ***
+LDAPS_WS          -1.018e-01  6.046e-03 -16.836  &lt; 2e-16 ***
+LDAPS_LH           8.010e-02  6.651e-03  12.043  &lt; 2e-16 ***
+LDAPS_CC1         -9.478e-02  1.009e-02  -9.397  &lt; 2e-16 ***
+LDAPS_CC2         -5.988e-02  1.230e-02  -4.868 1.15e-06 ***
+LDAPS_CC3         -6.079e-02  1.237e-02  -4.913 9.15e-07 ***
+LDAPS_CC4         -9.948e-02  9.329e-03 -10.663  &lt; 2e-16 ***
+LDAPS_PPT1        -3.970e-03  6.412e-03  -0.619 0.535766    
+LDAPS_PPT2         7.534e-02  6.513e-03  11.568  &lt; 2e-16 ***
+LDAPS_PPT3        -1.131e-02  6.058e-03  -1.866 0.062056 .  
+LDAPS_PPT4        -1.361e-03  6.073e-03  -0.224 0.822706    
+lat               -2.181e-02  5.875e-03  -3.713 0.000207 ***
+lon               -4.688e-02  5.825e-03  -8.048 9.74e-16 ***
+DEM               -9.480e-02  9.153e-03 -10.357  &lt; 2e-16 ***
+Slope              9.402e-02  9.100e-03  10.331  &lt; 2e-16 ***
+`Solar radiation`  1.145e-02  5.986e-03   1.913 0.055746 .  
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.4695 on 7566 degrees of freedom
+Multiple R-squared:  0.7802,    Adjusted R-squared:  0.7796 
+F-statistic:  1279 on 21 and 7566 DF,  p-value: &lt; 2.2e-16</code></pre>
+<p>With an explained variance of 78%, the forecast is working pretty well. This is the baseline we want to check all other methods against. To that purpose, we’ll store respective predictions and prediction errors (the latter being operationalized as root mean squared error, RMSE). For now, we just have entries for <code>lm()</code>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>rmse <span class="ot">&lt;-</span> <span class="cf">function</span>(y_true, y_pred) {</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  (y_true <span class="sc">-</span> y_pred)<span class="sc">^</span><span class="dv">2</span> <span class="sc">%&gt;%</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sqrt</span>()</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>all_preds <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">b =</span> weather_df<span class="sc">$</span>Next_Tmax,</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">lm =</span> fit<span class="sc">$</span>fitted.values</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>all_errs <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">lm =</span> <span class="fu">rmse</span>(all_preds<span class="sc">$</span>b, all_preds<span class="sc">$</span>lm))</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>all_errs</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>       lm
+1 40.8369</code></pre>
+</section>
+<section id="least-squares-ii-using-linalg_lstsq" class="level3" data-number="24.2.2">
+<h3 data-number="24.2.2" class="anchored" data-anchor-id="least-squares-ii-using-linalg_lstsq"><span class="header-section-number">24.2.2</span> Least squares (II): Using <code>linalg_lstsq()</code></h3>
+<p>Now, for a moment let’s assume this was not about exploring different approaches, but getting a quick result. In <code>torch</code>, we have <code>linalg_lstsq()</code>, a function dedicated specifically to solving least-squares problems. (This is the function whose documentation I was citing, above.) Just like we did with <code>lm()</code>, we’d probably just go ahead and call it, making use of the default settings:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>x_lstsq <span class="ot">&lt;-</span> <span class="fu">linalg_lstsq</span>(A, b)<span class="sc">$</span>solution</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>all_preds<span class="sc">$</span>lstsq <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(A<span class="sc">$</span><span class="fu">matmul</span>(x_lstsq))</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>all_errs<span class="sc">$</span>lstsq <span class="ot">&lt;-</span> <span class="fu">rmse</span>(all_preds<span class="sc">$</span>b, all_preds<span class="sc">$</span>lstsq)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="fu">tail</span>(all_preds)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>              b         lm      lstsq
+7583 -1.1380931 -1.3544620 -1.3544616
+7584 -0.8488721 -0.9040997 -0.9040993
+7585 -0.7203294 -0.9675286 -0.9675281
+7586 -0.6239224 -0.9044044 -0.9044040
+7587 -0.5275154 -0.8738639 -0.8738635
+7588 -0.7846007 -0.8725795 -0.8725792</code></pre>
+<p>Predictions resemble those of <code>lm()</code> very closely – so closely, in fact, that we may guess those tiny differences are just due to numerical errors surfacing from deep down the respective call stacks. RMSE, thus, should be equal as well:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>all_errs</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>       lm    lstsq
+1 40.8369 40.8369</code></pre>
+<p>It is; and this is a satisfying outcome. However, it only really came about due to that “trick”: normalization. Of course, when I say “trick”, I don’t really mean it. Standardizing the data is a common operation, and especially with neural networks, it tends to get used routinely, to speed up training. The point I’d like to make is this: Frameworks for high-performance computation, like <code>torch</code>, will often presuppose more domain knowledge, or more up-front analysis, on the part of the user.</p>
+<p>I’ll explain.</p>
+</section>
+<section id="interlude-what-if-we-hadnt-standardized-the-data" class="level3" data-number="24.2.3">
+<h3 data-number="24.2.3" class="anchored" data-anchor-id="interlude-what-if-we-hadnt-standardized-the-data"><span class="header-section-number">24.2.3</span> Interlude: What if we hadn’t standardized the data?</h3>
+<p>For quick comparison, let’s create an alternate matrix of predictors: <em>not</em> normalizing the data, this time.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>weather_df_alt <span class="ot">&lt;-</span> </span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read_csv</span>(<span class="st">"resources/matrix-weather.csv"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">na.omit</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(station, Next_Tmin, Date)) </span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>weather_alt <span class="ot">&lt;-</span> <span class="fu">torch_tensor</span>(weather_df_alt <span class="sc">%&gt;%</span> <span class="fu">as.matrix</span>())</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>A_alt <span class="ot">&lt;-</span> weather_alt[ , <span class="dv">1</span><span class="sc">:-</span><span class="dv">2</span>]</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>b_alt <span class="ot">&lt;-</span> weather_alt[ , <span class="sc">-</span><span class="dv">1</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>To set our expectations, we again call <code>lm()</code>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>fit_alt <span class="ot">&lt;-</span> <span class="fu">lm</span>(Next_Tmax <span class="sc">~</span> ., <span class="at">data =</span> weather_df_alt)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>all_preds_alt <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">b =</span> weather_df_alt<span class="sc">$</span>Next_Tmax,</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">lm =</span> fit_alt<span class="sc">$</span>fitted.values</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>all_errs_alt <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">lm =</span> <span class="fu">rmse</span>(</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>    all_preds_alt<span class="sc">$</span>b,</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>    all_preds_alt<span class="sc">$</span>lm</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>all_errs_alt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>        lm
+1 127.0765</code></pre>
+<p>Now, we call <code>linalg_lstsq()</code>, using the default arguments just like we did before.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>x_lstsq_alt <span class="ot">&lt;-</span> <span class="fu">linalg_lstsq</span>(A_alt, b_alt)<span class="sc">$</span>solution</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>all_preds_alt<span class="sc">$</span>lstsq <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(A_alt<span class="sc">$</span><span class="fu">matmul</span>(x_lstsq_alt))</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>all_errs_alt<span class="sc">$</span>lstsq <span class="ot">&lt;-</span> <span class="fu">rmse</span>(</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  all_preds_alt<span class="sc">$</span>b, all_preds_alt<span class="sc">$</span>lstsq</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>all_errs_alt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>        lm    lstsq
+1 127.0765 177.9128</code></pre>
+<p>Wow – what happened here? Thinking back of that piece of documentation I’ve cited, maybe the default arguments aren’t working out that well, this time. Let’s find out why.</p>
+<section id="investigating-the-issue" class="level4" data-number="24.2.3.1">
+<h4 data-number="24.2.3.1" class="anchored" data-anchor-id="investigating-the-issue"><span class="header-section-number">24.2.3.1</span> Investigating “the issue”</h4>
+<p>To efficiently solve a linear least-squares problem, <code>torch</code> calls into LAPACK, a set of Fortran routines designed to efficiently and scaleably address the tasks most frequently found in linear algebra: solving linear systems of equations, computing eigenvectors and eigenvalues, and determining singular values.</p>
+<p>The allowed <code>driver</code>s in <code>linalg_lstsq()</code> correspond to different LAPACK procedures<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>, and these procedures all apply different algorithms in order to solve the problem – analogously to what’ll we do ourselves, below.</p>
+<p>Thus, in investigating what is going on, step one is to determine which method gets used and why; analyse (if possible) why the result is unsatisfying; determine the LAPACK routine we’d like to be using instead, and check what happens if indeed we do. (Of course, given the little effort involved, we’d probably give all methods a try.)</p>
+<p>The main concept involved here is the <em>rank</em> of a matrix.</p>
+</section>
+<section id="concepts-i-rank-of-a-matrix" class="level4" data-number="24.2.3.2">
+<h4 data-number="24.2.3.2" class="anchored" data-anchor-id="concepts-i-rank-of-a-matrix"><span class="header-section-number">24.2.3.2</span> Concepts (I): Rank of a matrix</h4>
+<p><em>“But wait!”</em> you may be thinking – from the above-cited piece of documentation, it seems like the first thing we should check is not rank, but <em>condition number</em>: whether the matrix is “well-conditioned”. Yes, the condition number certainly is important, and we’ll get back to it very soon. However, there is something even more fundamental at work here, something that does not really “jump to the eye”.</p>
+<p>The central piece of information is found in that LAPACK piece of documentation we’re being referred to by <code>linalg_lstsq()</code>. Between the four routines GELS, GELSY, GELSD, and GELSS, differences are not restricted to implementation. The <em>goal</em> of optimization differs, as well. The rationale is the following. Throughout, let’s assume we’re working with a matrix that has more rows than columns (more observations than features, in the most-frequent case):</p>
+<ul>
+<li><p>If the matrix is full-rank – meaning, its columns are linearly independent – there is no “perfect” solution. The problem is over-determined. All we can do is find the best possible approximation. This is done by minimizing the prediction error – we’ll come back to that when discussing the normal equations. Minimize prediction error is what the GELS routine does, and it is GELS we should use when we have a full-rank matrix of predictors.</p></li>
+<li><p>If the matrix is not full-rank, the problem is under-determined; there is an infinite number of solutions. All the remaining routines – GELSY, GELSD, and GELSS – are suited to this situation. While they do proceed differently, they all pursue the same strategy, different from the one followed by GELS: In addition to the prediction error, they <em>also</em> minimize the vector of coefficients. This is called finding a minimum-norm least-squares solution.</p></li>
+</ul>
+<p>In sum, GELS (for full-rank matrices) and the three of GELSY, GELSD, and GELSS (for when the matrix is rank-deficient) intentionally follow different optimization criteria.</p>
+<p>Now, as per the documentation for <code>linalg_lstsq()</code>, when no <code>driver</code> is passed explicitly, it is GELSY that gets called. That should be fine if our matrix is rank-deficient – but is it?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">linalg_matrix_rank</span>(A_alt)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>torch_tensor
+21
+[ CPULongType{} ]</code></pre>
+<p>The matrix has twenty-one columns; so if its rank is twenty-one, then it is full-rank for sure. We definitely want to be calling the GELS routine.</p>
+</section>
+<section id="calling-linalg_lstsq-the-right-way" class="level4" data-number="24.2.3.3">
+<h4 data-number="24.2.3.3" class="anchored" data-anchor-id="calling-linalg_lstsq-the-right-way"><span class="header-section-number">24.2.3.3</span> Calling <code>linalg_lstsq()</code> the right way</h4>
+<p>Now that we know what to pass for <code>driver</code>, here is the modified call:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>x_lstsq_alt <span class="ot">&lt;-</span> <span class="fu">linalg_lstsq</span>(</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  A_alt, b_alt,</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">driver =</span> <span class="st">"gels"</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>)<span class="sc">$</span>solution</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>all_preds_alt<span class="sc">$</span>lstsq <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(A_alt<span class="sc">$</span><span class="fu">matmul</span>(x_lstsq_alt))</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>all_errs_alt<span class="sc">$</span>lstsq <span class="ot">&lt;-</span> <span class="fu">rmse</span>(</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>  all_preds_alt<span class="sc">$</span>b,</span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>  all_preds_alt<span class="sc">$</span>lstsq</span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>all_errs_alt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>        lm    lstsq
+1 127.0765 127.9489</code></pre>
+<p>Now, the respective RMSE values are very close. You’ll be wondering, though: Why didn’t we have to specify the Fortran routine when working with the <em>standardized</em> matrix?</p>
+</section>
+<section id="why-did-standardization-help" class="level4" data-number="24.2.3.4">
+<h4 data-number="24.2.3.4" class="anchored" data-anchor-id="why-did-standardization-help"><span class="header-section-number">24.2.3.4</span> Why did standardization help?</h4>
+<p>For our matrix, what standardization did was reduce significantly the range spanned by the singular values. With <code>A</code>, the standardized matrix, the largest singular value is about ten times as large as the smallest one:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>svals_normalized_A <span class="ot">&lt;-</span> <span class="fu">linalg_svdvals</span>(A)<span class="sc">/</span><span class="fu">linalg_svdvals</span>(A)[<span class="dv">1</span>]</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>svals_normalized_A <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>[1] 1.0000000 0.7473214 0.5929527 0.5233989 0.5188764 0.4706140
+[7] 0.4391665 0.4249273 0.4034659 0.3815900 0.3621315 0.3557949
+[13] 0.3297923 0.2707912 0.2489560 0.2229859 0.2175170 0.1852890
+[19] 0.1627083 0.1553169 0.1075778</code></pre>
+<p>While with <code>A_alt</code>, it is a million times as large:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>svals_normalized_A_alt <span class="ot">&lt;-</span> <span class="fu">linalg_svdvals</span>(A_alt) <span class="sc">/</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">linalg_svdvals</span>(A_alt)[<span class="dv">1</span>]</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>svals_normalized_A_alt <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>[1] 1.000000e+00 1.014369e-02 6.407313e-03 2.881966e-03
+[5] 2.236537e-03 9.633782e-04 6.678377e-04 3.988165e-04
+[9] 3.584047e-04 3.137257e-04 2.699152e-04 2.383501e-04
+[13] 2.234150e-04 1.803384e-04 1.625245e-04 1.300101e-04
+[17] 4.312536e-05 3.463851e-05 1.964120e-05 1.689913e-05
+[18] 8.419599e-06</code></pre>
+<p>Why is this important? It’s here that we finally get back to the <em>condition number</em>.</p>
+</section>
+<section id="concepts-ii-condition-number" class="level4" data-number="24.2.3.5">
+<h4 data-number="24.2.3.5" class="anchored" data-anchor-id="concepts-ii-condition-number"><span class="header-section-number">24.2.3.5</span> Concepts (II): Condition number</h4>
+<p>The higher the so-called <em>condition number</em> of a matrix, the more likely we are to run into problems of numerical stability when computing with it. In torch, <code>linalg_cond()</code> is used to obtain the condition number. Let’s compare the condition numbers for <code>A</code> and <code>A_alt</code>, respectively.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">linalg_cond</span>(A)</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="fu">linalg_cond</span>(A_alt)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>torch_tensor
+9.2956
+[ CPUFloatType{} ]
+
+torch_tensor
+118770
+[ CPUFloatType{} ]</code></pre>
+<p>That is quite a difference! How does it arise?</p>
+<p>The condition number is defined as the matrix norm of <code>A</code>, divided by the norm of its inverse. Different kinds of norm may be used; the default is the 2-norm. In this case, condition number can be computed from the matrix’s singular values: Namely, the 2-norm of <code>A</code> equals the largest singular value, while that of its inverse is given by the smallest one.</p>
+<p>We can verify this ourselves, using <code>linalg_svdvals()</code> as before:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">linalg_svdvals</span>(A)[<span class="dv">1</span>]<span class="sc">/</span><span class="fu">linalg_svdvals</span>(A)[<span class="dv">21</span>]</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="fu">linalg_svdvals</span>(A_alt)[<span class="dv">1</span>]<span class="sc">/</span><span class="fu">linalg_svdvals</span>(A_alt)[<span class="dv">21</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>torch_tensor
+9.29559
+[ CPUFloatType{} ]
+
+torch_tensor
+118770
+[ CPUFloatType{} ]</code></pre>
+<p>To reiterate, this is a substantial difference. Incidentally, do you remember that in the case of <code>A_alt</code>, RMSE was a tiny bit worse for <code>linalg_lstsq()</code> than for <code>lm()</code>, even when using the appropriate routine, GELS? Given that both essentially use the same algorithm (QR factorization, to be introduced very soon) this may very well have been due to numerical errors, arising from the high condition number of <code>A_alt</code>.</p>
+<p>By now, I may have convinced you that with <code>torch</code>’s <code>linalg</code> component, it helps to know a bit about how the most-in-use least-squares algorithms work. Let’s get acquainted.</p>
+</section>
+</section>
+<section id="least-squares-iii-the-normal-equations" class="level3" data-number="24.2.4">
+<h3 data-number="24.2.4" class="anchored" data-anchor-id="least-squares-iii-the-normal-equations"><span class="header-section-number">24.2.4</span> Least squares (III): The normal equations</h3>
+<p>We start by stating the goal. Given a matrix, <span class="math inline">\(\mathbf{A}\)</span>, that holds features in its columns and observations in its rows, and a vector of observed outcomes, <span class="math inline">\(\mathbf{b}\)</span>, we want to find regression coefficients, one for each feature, that allow to approximate <span class="math inline">\(\mathbf{b}\)</span> as well as possible. Call the vector of regression coefficients <span class="math inline">\(\mathbf{x}\)</span>. To obtain it, we need to solve a simultaneous system of equations, that in matrix notation appears as</p>
+<p><span class="math display">\[
+\mathbf{Ax} = \mathbf{b}
+\]</span></p>
+<p>If <span class="math inline">\(\mathbf{b}\)</span> were a square, invertible matrix, the solution could directly be computed as <span class="math inline">\(\mathbf{x} = \mathbf{A}^{-1}\mathbf{b}\)</span>. This will hardly ever be possible, though; we’ll (hopefully) always have more observations than predictors. Another approach is needed. It directly starts from the problem statement.</p>
+<p>When we use the columns of <span class="math inline">\(\mathbf{A}\)</span> to approximate <span class="math inline">\(\mathbf{b}\)</span>, that approximation necessarily is in the column space of <span class="math inline">\(\mathbf{A}\)</span>. <span class="math inline">\(\mathbf{b}\)</span>, on the other hand, normally won’t be. We want those two to be as close as possible; in other words, we want to minimize the distance between them. Choosing the 2-norm for the distance, this yields the objective</p>
+<p><span class="math display">\[
+minimize \ ||\mathbf{Ax}-\mathbf{b}||^2
+\]</span></p>
+<p>This distance is the (squared) length of the vector of prediction errors. That vector necessarily is orthogonal to <span class="math inline">\(\mathbf{A}\)</span> itself. That is, when we multiply it with <span class="math inline">\(\mathbf{A}\)</span>, we get the zero vector:</p>
+<p><span class="math display">\[
+\mathbf{A}^T(\mathbf{Ax} - \mathbf{b}) = \mathbf{0}
+\]</span></p>
+<p>A rearrangement of this equation yields the so-called <em>normal equations</em>:</p>
+<p><span class="math display">\[
+\mathbf{A}^T \mathbf{A} \mathbf{x} = \mathbf{A}^T \mathbf{b}
+\]</span></p>
+<p>These may be solved for <span class="math inline">\(\mathbf{x}\)</span>, computing the inverse of <span class="math inline">\(\mathbf{A}^T\mathbf{A}\)</span>:</p>
+<p><span class="math display">\[
+\mathbf{x} = (\mathbf{A}^T \mathbf{A})^{-1} \mathbf{A}^T \mathbf{b}
+\]</span></p>
+<p><span class="math inline">\(\mathbf{A}^T\mathbf{A}\)</span> is a square matrix. It still might not be invertible, in which case the so-called pseudoinverse would be computed instead. In our case, this will not be needed; we already know <span class="math inline">\(\mathbf{A}\)</span> has full rank, and so does <span class="math inline">\(\mathbf{A}^T\mathbf{A}\)</span>.</p>
+<p>Thus, from the normal equations we have derived a recipe for computing <span class="math inline">\(\mathbf{b}\)</span>. Let’s put it to use, and compare with what we got from <code>lm()</code> and <code>linalg_lstsq()</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>AtA <span class="ot">&lt;-</span> A<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(A)</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>Atb <span class="ot">&lt;-</span> A<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(b)</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>inv <span class="ot">&lt;-</span> <span class="fu">linalg_inv</span>(AtA)</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> inv<span class="sc">$</span><span class="fu">matmul</span>(Atb)</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>all_preds<span class="sc">$</span>neq <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(A<span class="sc">$</span><span class="fu">matmul</span>(x))</span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>all_errs<span class="sc">$</span>neq <span class="ot">&lt;-</span> <span class="fu">rmse</span>(all_preds<span class="sc">$</span>b, all_preds<span class="sc">$</span>neq)</span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>all_errs</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>       lm   lstsq     neq
+1 40.8369 40.8369 40.8369</code></pre>
+<p>Having confirmed that the direct way works, we may allow ourselves some sophistication. Four different matrix factorizations will make their appearance: Cholesky, LU, QR, and Singular Value Decomposition. The goal, in every case, is to avoid the expensive computation of the (pseudo-) inverse. That’s what all methods have in common. However, they do not differ “just” in the way the matrix is factorized, but also, in <em>which</em> matrix is. This has to do with the constraints the various methods impose. Roughly speaking, the order they’re listed in above reflects a falling slope of preconditions, or put differently, a rising slope of generality. Due to the constraints involved, the first two (Cholesky, as well as LU decomposition) will be performed on <span class="math inline">\(\mathbf{A}^T\mathbf{A}\)</span>, while the latter two (QR and SVD) operate on <span class="math inline">\(\mathbf{A}\)</span> directly. With them, there never is a need to compute <span class="math inline">\(\mathbf{A}^T\mathbf{A}\)</span>.</p>
+</section>
+<section id="least-squares-iv-cholesky-decomposition" class="level3" data-number="24.2.5">
+<h3 data-number="24.2.5" class="anchored" data-anchor-id="least-squares-iv-cholesky-decomposition"><span class="header-section-number">24.2.5</span> Least squares (IV): Cholesky decomposition</h3>
+<p>In Cholesky decomposition, a matrix is factored into two triangular matrices of the same size, with one being the transpose of the other. This commonly is written either</p>
+<p><span class="math display">\[
+\mathbf{A} = \mathbf{L} \mathbf{L}^T
+\]</span> or</p>
+<p><span class="math display">\[
+\mathbf{A} = \mathbf{R}^T\mathbf{R}
+\]</span></p>
+<p>Here symbols <span class="math inline">\(\mathbf{L}\)</span> and <span class="math inline">\(\mathbf{R}\)</span> denote lower-triangular and upper-triangular matrices, respectively.</p>
+<p>For Cholesky decomposition to be possible, a matrix has to be both symmetric and positive definite. These are pretty strong conditions, ones that will not often be fulfilled in practice. In our case, <span class="math inline">\(\mathbf{A}\)</span> is not symmetric; this immediately implies we have to operate on <span class="math inline">\(\mathbf{A}^T\mathbf{A}\)</span> instead. And since <span class="math inline">\(\mathbf{A}\)</span> already is positive definite, we know that <span class="math inline">\(\mathbf{A}^T\mathbf{A}\)</span> is, as well.</p>
+<p>In <code>torch</code>, we obtain the Cholesky decomposition of a matrix using <code>linalg_cholesky()</code>. By default, this call will return <span class="math inline">\(\mathbf{L}\)</span>, a lower-triangular matrix.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="co"># AtA = L L_t</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>AtA <span class="ot">&lt;-</span> A<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(A)</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>L <span class="ot">&lt;-</span> <span class="fu">linalg_cholesky</span>(AtA)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Let’s check that we can reconstruct <span class="math inline">\(\mathbf{A}\)</span> from <span class="math inline">\(\mathbf{L}\)</span>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>LLt <span class="ot">&lt;-</span> L<span class="sc">$</span><span class="fu">matmul</span>(L<span class="sc">$</span><span class="fu">t</span>())</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>diff <span class="ot">&lt;-</span> LLt <span class="sc">-</span> AtA</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a><span class="fu">linalg_norm</span>(diff, <span class="at">ord =</span> <span class="st">"fro"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>torch_tensor
+0.00258896
+[ CPUFloatType{} ]</code></pre>
+<p>Here, I’ve computed the Frobenius norm of the difference between the original matrix and its reconstruction. The Frobenius norm individually sums up all matrix entries, and returns the square root. In theory, we’d like to see zero here; but in the presence of numerical errors, the result is sufficient to indicate that the factorization worked fine.</p>
+<p>Now that we have <span class="math inline">\(\mathbf{L}\mathbf{L}^T\)</span> instead of <span class="math inline">\(\mathbf{A}^T\mathbf{A}\)</span>, how does that help us? It’s here that the magic happens, and you’ll find the same type of magic at work in the remaining three methods. The idea is that due to some decomposition, a more performant way arises of solving the system of equations that constitute a given task.</p>
+<p>With <span class="math inline">\(\mathbf{L}\mathbf{L}^T\)</span>, the point is that <span class="math inline">\(\mathbf{L}\)</span> is triangular, and when that’s the case the linear system can be solved by simple substitution. That is best visible with a tiny example:</p>
+<p><span class="math display">\[
+\begin{bmatrix}
+  1 &amp; 0 &amp; 0\\
+  2 &amp; 3 &amp; 0\\
+  3 &amp; 4 &amp; 1
+\end{bmatrix}
+\begin{bmatrix}
+  x1\\
+  x2\\
+  x3
+\end{bmatrix}
+=
+\begin{bmatrix}
+  1\\
+  11\\
+  15
+\end{bmatrix}
+\]</span></p>
+<p>Starting in the top row, we immediately see that <span class="math inline">\(x1\)</span> equals <span class="math inline">\(1\)</span>; and once we know <em>that</em> it is straightforward to calculate, from row two, that <span class="math inline">\(x2\)</span> must be <span class="math inline">\(3\)</span>. The last row then tells us that <span class="math inline">\(x3\)</span> must be <span class="math inline">\(0\)</span>.</p>
+<p>In code, <code>torch_triangular_solve()</code> is used to efficiently compute the solution to a linear system of equations where the matrix of predictors is lower- or upper-triangular. An additional requirement is for the matrix to be symmetric – but that condition we already had to satisfy in order to be able to use Cholesky factorization.</p>
+<p>By default, <code>torch_triangular_solve()</code> expects the matrix to be upper- (not lower-)triangular; but there is a function parameter, <code>upper</code>, that lets us correct that expectation. The return value is a list, and its first item contains the desired solution. To illustrate, here is <code>torch_triangular_solve()</code>, applied to the toy example we manually solved above:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>some_L <span class="ot">&lt;-</span> <span class="fu">torch_tensor</span>(</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">0</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">1</span>), <span class="at">nrow =</span> <span class="dv">3</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>some_b <span class="ot">&lt;-</span> <span class="fu">torch_tensor</span>(<span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">11</span>, <span class="dv">15</span>), <span class="at">ncol =</span> <span class="dv">1</span>))</span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">torch_triangular_solve</span>(</span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>  some_b,</span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>  some_L,</span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">upper =</span> <span class="cn">FALSE</span></span>
+<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a>)[[<span class="dv">1</span>]]</span>
+<span id="cb36-11"><a href="#cb36-11" aria-hidden="true" tabindex="-1"></a>x</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>torch_tensor
+ 1
+ 3
+ 0
+[ CPUFloatType{3,1} ]</code></pre>
+<p>Returning to our running example, the normal equations now look like this:</p>
+<p><span class="math display">\[
+\mathbf{L}\mathbf{L}^T \mathbf{x} = \mathbf{A}^T \mathbf{b}
+\]</span></p>
+<p>We introduce a new variable, <span class="math inline">\(\mathbf{y}\)</span>, to stand for <span class="math inline">\(\mathbf{L}^T \mathbf{x}\)</span>,</p>
+<p><span class="math display">\[
+\mathbf{L}\mathbf{y} = \mathbf{A}^T \mathbf{b}
+\]</span></p>
+<p>and compute the solution to <em>this</em> system:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>Atb <span class="ot">&lt;-</span> A<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(b)</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">torch_triangular_solve</span>(</span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>  Atb<span class="sc">$</span><span class="fu">unsqueeze</span>(<span class="dv">2</span>),</span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>  L,</span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">upper =</span> <span class="cn">FALSE</span></span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a>)[[<span class="dv">1</span>]]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now that we have <span class="math inline">\(y\)</span>, we look back at how it was defined:</p>
+<p><span class="math display">\[
+\mathbf{y} = \mathbf{L}^T \mathbf{x}
+\]</span></p>
+<p>To determine <span class="math inline">\(\mathbf{x}\)</span>, we can thus again use <code>torch_triangular_solve()</code>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">torch_triangular_solve</span>(y, L<span class="sc">$</span><span class="fu">t</span>())[[<span class="dv">1</span>]]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>And there we are.</p>
+<p>As usual, we compute the prediction error:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>all_preds<span class="sc">$</span>chol <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(A<span class="sc">$</span><span class="fu">matmul</span>(x))</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>all_errs<span class="sc">$</span>chol <span class="ot">&lt;-</span> <span class="fu">rmse</span>(all_preds<span class="sc">$</span>b, all_preds<span class="sc">$</span>chol)</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>all_errs</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>       lm   lstsq     neq    chol
+1 40.8369 40.8369 40.8369 40.8369</code></pre>
+<p>Now that you’ve seen the rationale behind Cholesky factorization – and, as already suggested, the idea carries over to all other decompositions – you might like to save yourself some work making use of a dedicated convenience function, <code>torch_cholesky_solve()</code>. This will render obsolete the two calls to <code>torch_triangular_solve()</code>.</p>
+<p>The following lines yield the same output as the code above – but, of course, they <em>do</em> hide the underlying magic.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>L <span class="ot">&lt;-</span> <span class="fu">linalg_cholesky</span>(AtA)</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">torch_cholesky_solve</span>(Atb<span class="sc">$</span><span class="fu">unsqueeze</span>(<span class="dv">2</span>), L)</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>all_preds<span class="sc">$</span>chol2 <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(A<span class="sc">$</span><span class="fu">matmul</span>(x))</span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>all_errs<span class="sc">$</span>chol2 <span class="ot">&lt;-</span> <span class="fu">rmse</span>(all_preds<span class="sc">$</span>b, all_preds<span class="sc">$</span>chol2)</span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>all_errs</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>       lm   lstsq     neq    chol   chol2
+1 40.8369 40.8369 40.8369 40.8369 40.8369</code></pre>
+<p>Let’s move on to the next method – equivalently, to the next factorization.</p>
+</section>
+<section id="least-squares-v-lu-factorization" class="level3" data-number="24.2.6">
+<h3 data-number="24.2.6" class="anchored" data-anchor-id="least-squares-v-lu-factorization"><span class="header-section-number">24.2.6</span> Least squares (V): LU factorization</h3>
+<p>LU factorization is named after the two factors it introduces: a lower-triangular matrix, <span class="math inline">\(\mathbf{L}\)</span>, as well as an upper-triangular one, <span class="math inline">\(\mathbf{U}\)</span>. In theory, there are no restrictions on LU decomposition: Provided we allow for row exchanges, effectively turning <span class="math inline">\(\mathbf{A} = \mathbf{L}\mathbf{U}\)</span> into <span class="math inline">\(\mathbf{A} = \mathbf{P}\mathbf{L}\mathbf{U}\)</span> (where <span class="math inline">\(\mathbf{P}\)</span> is a permutation matrix), we can factorize any matrix.</p>
+<p>In practice, though, if we want to make use of <code>torch_triangular_solve()</code> , the input matrix has to be symmetric. Therefore, here too we have to work with <span class="math inline">\(\mathbf{A}^T\mathbf{A}\)</span>, not <span class="math inline">\(\mathbf{A}\)</span> directly. (And that’s why I’m showing LU decomposition right after Cholesky – they’re similar in what they make us do, though not at all similar in spirit.)</p>
+<p>Working with <span class="math inline">\(\mathbf{A}^T\mathbf{A}\)</span> means we’re again starting from the normal equations. We factorize <span class="math inline">\(\mathbf{A}^T\mathbf{A}\)</span>, then solve two triangular systems to arrive at the final solution. Here are the steps, including the not-always-needed permutation matrix <span class="math inline">\(\mathbf{P}\)</span>:</p>
+<p><span class="math display">\[
+\begin{aligned}
+\mathbf{A}^T \mathbf{A} \mathbf{x} &amp;= \mathbf{A}^T \mathbf{b} \\
+\mathbf{P} \mathbf{L}\mathbf{U} \mathbf{x} &amp;= \mathbf{A}^T \mathbf{b} \\
+\mathbf{L} \mathbf{y} &amp;= \mathbf{P}^T \mathbf{A}^T \mathbf{b} \\
+\mathbf{y} &amp;= \mathbf{U} \mathbf{x}
+\end{aligned}
+\]</span></p>
+<p>We see that when <span class="math inline">\(\mathbf{P}\)</span> <em>is</em> needed, there is an additional computation: Following the same strategy as we did with Cholesky, we want to move <span class="math inline">\(\mathbf{P}\)</span> from the left to the right. Luckily, what may look expensive – computing the inverse – is not: For a permutation matrix, its transpose reverses the operation.</p>
+<p>Code-wise, we’re already familiar with most of what we need to do. The only missing piece is <code>torch_lu()</code>. <code>torch_lu()</code> returns a list of two tensors, the first a compressed representation of the three matrices <span class="math inline">\(\mathbf{P}\)</span>, <span class="math inline">\(\mathbf{L}\)</span>, and <span class="math inline">\(\mathbf{U}\)</span>. We can uncompress it using <code>torch_lu_unpack()</code> :</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>lu <span class="ot">&lt;-</span> <span class="fu">torch_lu</span>(AtA)</span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(P, L, U) <span class="sc">%&lt;-%</span> <span class="fu">torch_lu_unpack</span>(lu[[<span class="dv">1</span>]], lu[[<span class="dv">2</span>]]) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We move <span class="math inline">\(\mathbf{P}\)</span> to the other side:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>Atb <span class="ot">&lt;-</span> P<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(Atb)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>All that remains to be done is solve two triangular systems, and we are done:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">torch_triangular_solve</span>(</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>  Atb<span class="sc">$</span><span class="fu">unsqueeze</span>(<span class="dv">2</span>),</span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>  L,</span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">upper =</span> <span class="cn">FALSE</span></span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>)[[<span class="dv">1</span>]]</span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">torch_triangular_solve</span>(y, U)[[<span class="dv">1</span>]]</span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a>all_preds<span class="sc">$</span>lu <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(A<span class="sc">$</span><span class="fu">matmul</span>(x))</span>
+<span id="cb46-9"><a href="#cb46-9" aria-hidden="true" tabindex="-1"></a>all_errs<span class="sc">$</span>lu <span class="ot">&lt;-</span> <span class="fu">rmse</span>(all_preds<span class="sc">$</span>b, all_preds<span class="sc">$</span>lu)</span>
+<span id="cb46-10"><a href="#cb46-10" aria-hidden="true" tabindex="-1"></a>all_errs[<span class="dv">1</span>, <span class="sc">-</span><span class="dv">5</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>       lm   lstsq     neq    chol      lu
+1 40.8369 40.8369 40.8369 40.8369 40.8369</code></pre>
+<p>As with Cholesky decomposition, we can save ourselves the trouble of calling <code>torch_triangular_solve()</code> twice. <code>torch_lu_solve()</code> takes the decomposition, and directly returns the final solution:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>lu <span class="ot">&lt;-</span> <span class="fu">torch_lu</span>(AtA)</span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">torch_lu_solve</span>(Atb<span class="sc">$</span><span class="fu">unsqueeze</span>(<span class="dv">2</span>), lu[[<span class="dv">1</span>]], lu[[<span class="dv">2</span>]])</span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>all_preds<span class="sc">$</span>lu2 <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(A<span class="sc">$</span><span class="fu">matmul</span>(x))</span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>all_errs<span class="sc">$</span>lu2 <span class="ot">&lt;-</span> <span class="fu">rmse</span>(all_preds<span class="sc">$</span>b, all_preds<span class="sc">$</span>lu2)</span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a>all_errs[<span class="dv">1</span>, <span class="sc">-</span><span class="dv">5</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>       lm   lstsq     neq    chol      lu      lu
+1 40.8369 40.8369 40.8369 40.8369 40.8369 40.8369</code></pre>
+<p>Now, we look at the two methods that don’t require computation of <span class="math inline">\(\mathbf{A}^T\mathbf{A}\)</span>.</p>
+</section>
+<section id="least-squares-vi-qr-factorization" class="level3" data-number="24.2.7">
+<h3 data-number="24.2.7" class="anchored" data-anchor-id="least-squares-vi-qr-factorization"><span class="header-section-number">24.2.7</span> Least squares (VI): QR factorization</h3>
+<p>Any matrix can be decomposed into an orthogonal matrix, <span class="math inline">\(\mathbf{Q}\)</span>, and an upper-triangular matrix, <span class="math inline">\(\mathbf{R}\)</span>. QR factorization is probably the most popular approach to solving least-squares problems; it is, in fact, the method used by R’s <code>lm()</code>. In what ways, then, does it simplify the task?</p>
+<p>As to <span class="math inline">\(\mathbf{R}\)</span>, we already know how it is useful: By virtue of being triangular, it defines a system of equations that can be solved step-by-step, by means of mere substitution. <span class="math inline">\(\mathbf{Q}\)</span> is even better. An orthogonal matrix is one whose columns are orthogonal – meaning, mutual dot products are all zero – and have unit norm; and the nice thing about such a matrix is that its inverse equals its transpose. In general, the inverse is hard to compute; the transpose, however, is easy. Seeing how computation of an inverse – solving <span class="math inline">\(\mathbf{x}=\mathbf{A}^{-1}\mathbf{b}\)</span> – is just the central task in least squares, it’s immediately clear how significant this is.</p>
+<p>Compared to our usual scheme, this leads to a slightly shortened recipe. There is no “dummy” variable <span class="math inline">\(\mathbf{y}\)</span> anymore. Instead, we directly move <span class="math inline">\(\mathbf{Q}\)</span> to the other side, computing the transpose (which <em>is</em> the inverse). All that remains, then, is back-substitution. Also, since every matrix has a QR decomposition, we now directly start from <span class="math inline">\(\mathbf{A}\)</span> instead of <span class="math inline">\(\mathbf{A}^T\mathbf{A}\)</span>:</p>
+<p><span class="math display">\[
+\begin{aligned}
+\mathbf{A}\mathbf{x} &amp;= \mathbf{b}\\
+\mathbf{Q}\mathbf{R}\mathbf{x} &amp;= \mathbf{b}\\
+\mathbf{R}\mathbf{x} &amp;= \mathbf{Q}^T\mathbf{b}\\
+\end{aligned}
+\]</span></p>
+<p>In <code>torch</code>, <code>linalg_qr()</code> gives us the matrices <span class="math inline">\(\mathbf{Q}\)</span> and <span class="math inline">\(\mathbf{R}\)</span>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(Q, R) <span class="sc">%&lt;-%</span> <span class="fu">linalg_qr</span>(A)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>On the right side, we used to have a “convenience variable” holding <span class="math inline">\(\mathbf{A}^T\mathbf{b}\)</span> ; here, we skip that step, and instead, do something “immediately useful”: move <span class="math inline">\(\mathbf{Q}\)</span> to the other side.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>Qtb <span class="ot">&lt;-</span> Q<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(b)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The only remaining step now is to solve the remaining triangular system.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">torch_triangular_solve</span>(Qtb<span class="sc">$</span><span class="fu">unsqueeze</span>(<span class="dv">2</span>), R)[[<span class="dv">1</span>]]</span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a>all_preds<span class="sc">$</span>qr <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(A<span class="sc">$</span><span class="fu">matmul</span>(x))</span>
+<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a>all_errs<span class="sc">$</span>qr <span class="ot">&lt;-</span> <span class="fu">rmse</span>(all_preds<span class="sc">$</span>b, all_preds<span class="sc">$</span>qr)</span>
+<span id="cb52-5"><a href="#cb52-5" aria-hidden="true" tabindex="-1"></a>all_errs[<span class="dv">1</span>, <span class="sc">-</span><span class="fu">c</span>(<span class="dv">5</span>,<span class="dv">7</span>)]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>       lm   lstsq     neq    chol      lu      qr
+1 40.8369 40.8369 40.8369 40.8369 40.8369 40.8369 </code></pre>
+<p>By now, you’ll be expecting for me to end this section saying “there is also a dedicated solver in <code>torch</code>/<code>torch_linalg</code>, namely …”). Well, not literally, no; but effectively, yes. If you call <code>linalg_lstsq()</code> passing <code>driver = "gels"</code>, it is QR factorization that will be used.</p>
+</section>
+<section id="least-squares-vii-singular-value-decomposition-svd" class="level3" data-number="24.2.8">
+<h3 data-number="24.2.8" class="anchored" data-anchor-id="least-squares-vii-singular-value-decomposition-svd"><span class="header-section-number">24.2.8</span> Least squares (VII): Singular Value Decomposition (SVD)</h3>
+<p>In true climactic order, the last factorization method we discuss is the most versatile, most diversely applicable, most semantically meaningful one: <em>Singular Value Decomposition (SVD)</em>. The third aspect, fascinating though it is, does not relate to our current task, so I won’t go into it here. Here, it is universal applicability that matters: Every matrix can be composed into components SVD-style.</p>
+<p>Singular Value Decomposition factors an input <span class="math inline">\(\mathbf{A}\)</span> into two orthogonal matrices, called <span class="math inline">\(\mathbf{U}\)</span> and <span class="math inline">\(\mathbf{V}^T\)</span>, and a diagonal one, named <span class="math inline">\(\symbf{\Sigma}\)</span>, such that <span class="math inline">\(\mathbf{A} = \mathbf{U} \symbf{\Sigma} \mathbf{V}^T\)</span>. Here <span class="math inline">\(\mathbf{U}\)</span> and <span class="math inline">\(\mathbf{V}^T\)</span> are the <em>left</em> and <em>right singular vectors</em>, and <span class="math inline">\(\symbf{\Sigma}\)</span> holds the <em>singular values</em>.</p>
+<p><span class="math display">\[
+\begin{aligned}
+\mathbf{A}\mathbf{x} &amp;= \mathbf{b}\\
+\mathbf{U}\symbf{\Sigma}\mathbf{V}^T\mathbf{x} &amp;= \mathbf{b}\\
+\symbf{\Sigma}\mathbf{V}^T\mathbf{x} &amp;= \mathbf{U}^T\mathbf{b}\\
+\mathbf{V}^T\mathbf{x} &amp;= \mathbf{y}\\
+\end{aligned}
+\]</span></p>
+<p>We start by obtaining the factorization, using <code>linalg_svd()</code> . The argument <code>full_matrices = FALSE</code> tells <code>torch</code> that we want a <span class="math inline">\(\mathbf{U}\)</span> of dimensionality same as <span class="math inline">\(\mathbf{A}\)</span>, not expanded to 7588 x 7588.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(U, S, Vt) <span class="sc">%&lt;-%</span> <span class="fu">linalg_svd</span>(A, <span class="at">full_matrices =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(U)</span>
+<span id="cb54-4"><a href="#cb54-4" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(S)</span>
+<span id="cb54-5"><a href="#cb54-5" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(Vt)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>[1] 7588   21
+[1] 21
+[1] 21 21</code></pre>
+<p>We move <span class="math inline">\(\mathbf{U}\)</span> to the other side – a cheap operation, thanks to <span class="math inline">\(\mathbf{U}\)</span> being orthogonal.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a>Utb <span class="ot">&lt;-</span> U<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(b)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>With both <span class="math inline">\(\mathbf{U}^T\mathbf{b}\)</span> and <span class="math inline">\(\symbf{\Sigma}\)</span> being same-length vectors, we can use element-wise multiplication to do the same for <span class="math inline">\(\symbf{\Sigma}\)</span>. We introduce a temporary variable, <code>y</code>, to hold the result.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> Utb <span class="sc">/</span> S</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now left with the final system to solve, <span class="math inline">\(\mathbf{\mathbf{V}^T\mathbf{x} = \mathbf{y}}\)</span>, we again profit from orthogonality – this time, of the matrix <span class="math inline">\(\mathbf{V}^T\)</span>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> Vt<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(y)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Wrapping up, let’s calculate predictions and prediction error:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a>all_preds<span class="sc">$</span>svd <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(A<span class="sc">$</span><span class="fu">matmul</span>(x))</span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a>all_errs<span class="sc">$</span>svd <span class="ot">&lt;-</span> <span class="fu">rmse</span>(all_preds<span class="sc">$</span>b, all_preds<span class="sc">$</span>svd)</span>
+<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a>all_errs[<span class="dv">1</span>, <span class="sc">-</span><span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">7</span>)]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>       lm   lstsq     neq    chol      lu     qr      svd
+1 40.8369 40.8369 40.8369 40.8369 40.8369 40.8369 40.8369</code></pre>
+<p>That concludes our tour of important least-squares algorithms. Wrapping up the example, we take a quick look at performance.</p>
+</section>
+<section id="checking-execution-times" class="level3" data-number="24.2.9">
+<h3 data-number="24.2.9" class="anchored" data-anchor-id="checking-execution-times"><span class="header-section-number">24.2.9</span> Checking execution times</h3>
+<p>Like I said, the focus in this chapter is on concepts, not performance. But once you work with bigger datasets, you inevitably will care about speed. Also, it’s just interesting to see how fast those methods are! So, let’s do a quick performance benchmark. Just, please, don’t extrapolate from these results – instead, run analogous code on the data you care about.</p>
+<p>To time them, we need all algorithms encapsulated in their respective functions. Here they are:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb61"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a><span class="co"># normal equations</span></span>
+<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a>ls_normal_eq <span class="ot">&lt;-</span> <span class="cf">function</span>(A, b) {</span>
+<span id="cb61-3"><a href="#cb61-3" aria-hidden="true" tabindex="-1"></a>  AtA <span class="ot">&lt;-</span> A<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(A)</span>
+<span id="cb61-4"><a href="#cb61-4" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="fu">linalg_inv</span>(AtA)<span class="sc">$</span><span class="fu">matmul</span>(A<span class="sc">$</span><span class="fu">t</span>())<span class="sc">$</span><span class="fu">matmul</span>(b)</span>
+<span id="cb61-5"><a href="#cb61-5" aria-hidden="true" tabindex="-1"></a>  x</span>
+<span id="cb61-6"><a href="#cb61-6" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb61-7"><a href="#cb61-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-8"><a href="#cb61-8" aria-hidden="true" tabindex="-1"></a><span class="co"># normal equations and Cholesky decomposition (done manually)</span></span>
+<span id="cb61-9"><a href="#cb61-9" aria-hidden="true" tabindex="-1"></a><span class="co"># A_t A x = A_t b</span></span>
+<span id="cb61-10"><a href="#cb61-10" aria-hidden="true" tabindex="-1"></a><span class="co"># L L_t x = A_t b</span></span>
+<span id="cb61-11"><a href="#cb61-11" aria-hidden="true" tabindex="-1"></a><span class="co"># L y = A_t b  </span></span>
+<span id="cb61-12"><a href="#cb61-12" aria-hidden="true" tabindex="-1"></a><span class="co"># L_t x = y</span></span>
+<span id="cb61-13"><a href="#cb61-13" aria-hidden="true" tabindex="-1"></a>ls_cholesky_diy <span class="ot">&lt;-</span> <span class="cf">function</span>(A, b) {</span>
+<span id="cb61-14"><a href="#cb61-14" aria-hidden="true" tabindex="-1"></a>  AtA <span class="ot">&lt;-</span> A<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(A)</span>
+<span id="cb61-15"><a href="#cb61-15" aria-hidden="true" tabindex="-1"></a>  Atb <span class="ot">&lt;-</span> A<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(b)</span>
+<span id="cb61-16"><a href="#cb61-16" aria-hidden="true" tabindex="-1"></a>  L <span class="ot">&lt;-</span> <span class="fu">linalg_cholesky</span>(AtA)</span>
+<span id="cb61-17"><a href="#cb61-17" aria-hidden="true" tabindex="-1"></a>  y <span class="ot">&lt;-</span> <span class="fu">torch_triangular_solve</span>(</span>
+<span id="cb61-18"><a href="#cb61-18" aria-hidden="true" tabindex="-1"></a>    Atb<span class="sc">$</span><span class="fu">unsqueeze</span>(<span class="dv">2</span>),</span>
+<span id="cb61-19"><a href="#cb61-19" aria-hidden="true" tabindex="-1"></a>    L,</span>
+<span id="cb61-20"><a href="#cb61-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">upper =</span> <span class="cn">FALSE</span></span>
+<span id="cb61-21"><a href="#cb61-21" aria-hidden="true" tabindex="-1"></a>  )[[<span class="dv">1</span>]]</span>
+<span id="cb61-22"><a href="#cb61-22" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="fu">torch_triangular_solve</span>(y, L<span class="sc">$</span><span class="fu">t</span>())[[<span class="dv">1</span>]]</span>
+<span id="cb61-23"><a href="#cb61-23" aria-hidden="true" tabindex="-1"></a>  x</span>
+<span id="cb61-24"><a href="#cb61-24" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb61-25"><a href="#cb61-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-26"><a href="#cb61-26" aria-hidden="true" tabindex="-1"></a><span class="co"># torch's Cholesky solver</span></span>
+<span id="cb61-27"><a href="#cb61-27" aria-hidden="true" tabindex="-1"></a>ls_cholesky_solve <span class="ot">&lt;-</span> <span class="cf">function</span>(A, b) {</span>
+<span id="cb61-28"><a href="#cb61-28" aria-hidden="true" tabindex="-1"></a>  AtA <span class="ot">&lt;-</span> A<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(A)</span>
+<span id="cb61-29"><a href="#cb61-29" aria-hidden="true" tabindex="-1"></a>  Atb <span class="ot">&lt;-</span> A<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(b)</span>
+<span id="cb61-30"><a href="#cb61-30" aria-hidden="true" tabindex="-1"></a>  L <span class="ot">&lt;-</span> <span class="fu">linalg_cholesky</span>(AtA)</span>
+<span id="cb61-31"><a href="#cb61-31" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="fu">torch_cholesky_solve</span>(Atb<span class="sc">$</span><span class="fu">unsqueeze</span>(<span class="dv">2</span>), L)</span>
+<span id="cb61-32"><a href="#cb61-32" aria-hidden="true" tabindex="-1"></a>  x</span>
+<span id="cb61-33"><a href="#cb61-33" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb61-34"><a href="#cb61-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-35"><a href="#cb61-35" aria-hidden="true" tabindex="-1"></a><span class="co"># normal equations and LU factorization (done manually)</span></span>
+<span id="cb61-36"><a href="#cb61-36" aria-hidden="true" tabindex="-1"></a><span class="co"># A_t A x = A_t b</span></span>
+<span id="cb61-37"><a href="#cb61-37" aria-hidden="true" tabindex="-1"></a><span class="co"># P L U x = A_t b</span></span>
+<span id="cb61-38"><a href="#cb61-38" aria-hidden="true" tabindex="-1"></a><span class="co"># L y = P_t A_t b          # where y = U x</span></span>
+<span id="cb61-39"><a href="#cb61-39" aria-hidden="true" tabindex="-1"></a><span class="co"># U x = y</span></span>
+<span id="cb61-40"><a href="#cb61-40" aria-hidden="true" tabindex="-1"></a>ls_lu_diy <span class="ot">&lt;-</span> <span class="cf">function</span>(A, b) {</span>
+<span id="cb61-41"><a href="#cb61-41" aria-hidden="true" tabindex="-1"></a>  AtA <span class="ot">&lt;-</span> A<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(A)</span>
+<span id="cb61-42"><a href="#cb61-42" aria-hidden="true" tabindex="-1"></a>  Atb <span class="ot">&lt;-</span> A<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(b)</span>
+<span id="cb61-43"><a href="#cb61-43" aria-hidden="true" tabindex="-1"></a>  lu <span class="ot">&lt;-</span> <span class="fu">torch_lu</span>(AtA)</span>
+<span id="cb61-44"><a href="#cb61-44" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(P, L, U) <span class="sc">%&lt;-%</span> <span class="fu">torch_lu_unpack</span>(lu[[<span class="dv">1</span>]], lu[[<span class="dv">2</span>]]) </span>
+<span id="cb61-45"><a href="#cb61-45" aria-hidden="true" tabindex="-1"></a>  Atb <span class="ot">&lt;-</span> P<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(Atb)</span>
+<span id="cb61-46"><a href="#cb61-46" aria-hidden="true" tabindex="-1"></a>  y <span class="ot">&lt;-</span> <span class="fu">torch_triangular_solve</span>(</span>
+<span id="cb61-47"><a href="#cb61-47" aria-hidden="true" tabindex="-1"></a>    Atb<span class="sc">$</span><span class="fu">unsqueeze</span>(<span class="dv">2</span>),</span>
+<span id="cb61-48"><a href="#cb61-48" aria-hidden="true" tabindex="-1"></a>    L,</span>
+<span id="cb61-49"><a href="#cb61-49" aria-hidden="true" tabindex="-1"></a>    <span class="at">upper =</span> <span class="cn">FALSE</span></span>
+<span id="cb61-50"><a href="#cb61-50" aria-hidden="true" tabindex="-1"></a>  )[[<span class="dv">1</span>]]</span>
+<span id="cb61-51"><a href="#cb61-51" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="fu">torch_triangular_solve</span>(y, U)[[<span class="dv">1</span>]]</span>
+<span id="cb61-52"><a href="#cb61-52" aria-hidden="true" tabindex="-1"></a>  x</span>
+<span id="cb61-53"><a href="#cb61-53" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb61-54"><a href="#cb61-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-55"><a href="#cb61-55" aria-hidden="true" tabindex="-1"></a><span class="co"># torch's LU solver</span></span>
+<span id="cb61-56"><a href="#cb61-56" aria-hidden="true" tabindex="-1"></a>ls_lu_solve <span class="ot">&lt;-</span> <span class="cf">function</span>(A, b) {</span>
+<span id="cb61-57"><a href="#cb61-57" aria-hidden="true" tabindex="-1"></a>  AtA <span class="ot">&lt;-</span> A<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(A) </span>
+<span id="cb61-58"><a href="#cb61-58" aria-hidden="true" tabindex="-1"></a>  Atb <span class="ot">&lt;-</span> A<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(b)</span>
+<span id="cb61-59"><a href="#cb61-59" aria-hidden="true" tabindex="-1"></a>  lu <span class="ot">&lt;-</span> <span class="fu">torch_lu</span>(AtA)</span>
+<span id="cb61-60"><a href="#cb61-60" aria-hidden="true" tabindex="-1"></a>  m <span class="ot">=</span> lu[[<span class="dv">1</span>]]</span>
+<span id="cb61-61"><a href="#cb61-61" aria-hidden="true" tabindex="-1"></a>  pivots <span class="ot">=</span> lu[[<span class="dv">2</span>]]</span>
+<span id="cb61-62"><a href="#cb61-62" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="fu">torch_lu_solve</span>(Atb<span class="sc">$</span><span class="fu">unsqueeze</span>(<span class="dv">2</span>), m, pivots)</span>
+<span id="cb61-63"><a href="#cb61-63" aria-hidden="true" tabindex="-1"></a>  x</span>
+<span id="cb61-64"><a href="#cb61-64" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb61-65"><a href="#cb61-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-66"><a href="#cb61-66" aria-hidden="true" tabindex="-1"></a><span class="co"># QR factorization</span></span>
+<span id="cb61-67"><a href="#cb61-67" aria-hidden="true" tabindex="-1"></a><span class="co"># A x = b</span></span>
+<span id="cb61-68"><a href="#cb61-68" aria-hidden="true" tabindex="-1"></a><span class="co"># Q R x = b</span></span>
+<span id="cb61-69"><a href="#cb61-69" aria-hidden="true" tabindex="-1"></a><span class="co"># R x = Q_t b </span></span>
+<span id="cb61-70"><a href="#cb61-70" aria-hidden="true" tabindex="-1"></a>ls_qr <span class="ot">&lt;-</span> <span class="cf">function</span>(A, b) {</span>
+<span id="cb61-71"><a href="#cb61-71" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(Q, R) <span class="sc">%&lt;-%</span> <span class="fu">linalg_qr</span>(A)</span>
+<span id="cb61-72"><a href="#cb61-72" aria-hidden="true" tabindex="-1"></a>  Qtb <span class="ot">&lt;-</span> Q<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(b)</span>
+<span id="cb61-73"><a href="#cb61-73" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="fu">torch_triangular_solve</span>(Qtb<span class="sc">$</span><span class="fu">unsqueeze</span>(<span class="dv">2</span>), R)[[<span class="dv">1</span>]]</span>
+<span id="cb61-74"><a href="#cb61-74" aria-hidden="true" tabindex="-1"></a>  x</span>
+<span id="cb61-75"><a href="#cb61-75" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb61-76"><a href="#cb61-76" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-77"><a href="#cb61-77" aria-hidden="true" tabindex="-1"></a><span class="co"># SVD</span></span>
+<span id="cb61-78"><a href="#cb61-78" aria-hidden="true" tabindex="-1"></a><span class="co"># A x = b</span></span>
+<span id="cb61-79"><a href="#cb61-79" aria-hidden="true" tabindex="-1"></a><span class="co"># U S V_ x = b</span></span>
+<span id="cb61-80"><a href="#cb61-80" aria-hidden="true" tabindex="-1"></a><span class="co"># S V_t x = U_t b</span></span>
+<span id="cb61-81"><a href="#cb61-81" aria-hidden="true" tabindex="-1"></a><span class="co"># S y = U_t b </span></span>
+<span id="cb61-82"><a href="#cb61-82" aria-hidden="true" tabindex="-1"></a><span class="co"># V_t x = y</span></span>
+<span id="cb61-83"><a href="#cb61-83" aria-hidden="true" tabindex="-1"></a>ls_svd <span class="ot">&lt;-</span> <span class="cf">function</span>(A, b) {</span>
+<span id="cb61-84"><a href="#cb61-84" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(U, S, Vt) <span class="sc">%&lt;-%</span> <span class="fu">linalg_svd</span>(A, <span class="at">full_matrices =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb61-85"><a href="#cb61-85" aria-hidden="true" tabindex="-1"></a>  Utb <span class="ot">&lt;-</span> U<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(b)</span>
+<span id="cb61-86"><a href="#cb61-86" aria-hidden="true" tabindex="-1"></a>  y <span class="ot">&lt;-</span> Utb <span class="sc">/</span> S</span>
+<span id="cb61-87"><a href="#cb61-87" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> Vt<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(y)</span>
+<span id="cb61-88"><a href="#cb61-88" aria-hidden="true" tabindex="-1"></a>  x</span>
+<span id="cb61-89"><a href="#cb61-89" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb61-90"><a href="#cb61-90" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-91"><a href="#cb61-91" aria-hidden="true" tabindex="-1"></a><span class="co"># torch's general least squares solver</span></span>
+<span id="cb61-92"><a href="#cb61-92" aria-hidden="true" tabindex="-1"></a>ls_lstsq <span class="ot">&lt;-</span> <span class="cf">function</span>(A, b) {</span>
+<span id="cb61-93"><a href="#cb61-93" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="fu">linalg_lstsq</span>(A, b)</span>
+<span id="cb61-94"><a href="#cb61-94" aria-hidden="true" tabindex="-1"></a>  x</span>
+<span id="cb61-95"><a href="#cb61-95" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We use the <code>bench</code> package to profile those methods. The <code>mark()</code> function does a lot more than just track time; however, here we just take a glance at the distributions of execution times (<a href="#fig-least-squares-benchmark">fig.&nbsp;<span>24.1</span></a>):</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb62"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">777</span>)</span>
+<span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a><span class="fu">torch_manual_seed</span>(<span class="dv">777</span>)</span>
+<span id="cb62-3"><a href="#cb62-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(bench)</span>
+<span id="cb62-4"><a href="#cb62-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb62-5"><a href="#cb62-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb62-6"><a href="#cb62-6" aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">mark</span>(<span class="fu">ls_normal_eq</span>(A, b),</span>
+<span id="cb62-7"><a href="#cb62-7" aria-hidden="true" tabindex="-1"></a>            <span class="fu">ls_cholesky_diy</span>(A, b),</span>
+<span id="cb62-8"><a href="#cb62-8" aria-hidden="true" tabindex="-1"></a>            <span class="fu">ls_cholesky_solve</span>(A, b),</span>
+<span id="cb62-9"><a href="#cb62-9" aria-hidden="true" tabindex="-1"></a>            <span class="fu">ls_lu_diy</span>(A, b),</span>
+<span id="cb62-10"><a href="#cb62-10" aria-hidden="true" tabindex="-1"></a>            <span class="fu">ls_lu_solve</span>(A, b),</span>
+<span id="cb62-11"><a href="#cb62-11" aria-hidden="true" tabindex="-1"></a>            <span class="fu">ls_qr</span>(A, b),</span>
+<span id="cb62-12"><a href="#cb62-12" aria-hidden="true" tabindex="-1"></a>            <span class="fu">ls_svd</span>(A, b),</span>
+<span id="cb62-13"><a href="#cb62-13" aria-hidden="true" tabindex="-1"></a>            <span class="fu">ls_lstsq</span>(A, b)<span class="sc">$</span>solution,</span>
+<span id="cb62-14"><a href="#cb62-14" aria-hidden="true" tabindex="-1"></a>            <span class="at">min_iterations =</span> <span class="dv">1000</span>)</span>
+<span id="cb62-15"><a href="#cb62-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb62-16"><a href="#cb62-16" aria-hidden="true" tabindex="-1"></a><span class="fu">autoplot</span>(res, <span class="at">type =</span> <span class="st">"ridge"</span>) <span class="sc">+</span> <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fig-least-squares-benchmark" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="images/least-squares-benchmark.png" class="quarto-discovered-preview-image img-fluid figure-img" alt="Density plots of execution times, one row per method. Not going into detail because I just want to show how benchmarking can be done."></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;24.1: Timing least-squares algorithms, by example.</figcaption><p></p>
+</figure>
+</div>
+<p>In conclusion, we saw how different ways of factorizing a matrix can help in solving least squares problems. We also quickly showed a way to time those strategies; however, speed is not all that counts. We want the solution to be reliable, as well. The technical term here is <em>stability</em>.</p>
+</section>
+</section>
+<section id="a-quick-look-at-stability" class="level2" data-number="24.3">
+<h2 data-number="24.3" class="anchored" data-anchor-id="a-quick-look-at-stability"><span class="header-section-number">24.3</span> A quick look at stability</h2>
+<p>We’ve already talked about condition numbers. The concept of stability is similar in spirit, but refers to an <em>algorithm</em> instead of a <em>matrix</em>. In both cases, the idea is that small changes in the input to a calculation should lead to small changes in the output. Whole books have been dedicated to this topic, so I’ll refrain from going into details<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>.</p>
+<p>Instead, I’ll use an example of an ill-conditioned least-squares problem – meaning, the matrix is ill-conditioned – for us to form an idea about the stability of the algorithms we’ve discussed<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>.</p>
+<p>The matrix of predictors is a 100 x 15 Vandermonde matrix, created like so:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">777</span>)</span>
+<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a><span class="fu">torch_manual_seed</span>(<span class="dv">777</span>)</span>
+<span id="cb63-3"><a href="#cb63-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb63-4"><a href="#cb63-4" aria-hidden="true" tabindex="-1"></a>m <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb63-5"><a href="#cb63-5" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">15</span></span>
+<span id="cb63-6"><a href="#cb63-6" aria-hidden="true" tabindex="-1"></a>t <span class="ot">&lt;-</span> <span class="fu">torch_linspace</span>(<span class="dv">0</span>, <span class="dv">1</span>, m)<span class="sc">$</span><span class="fu">to</span>(<span class="at">dtype =</span> <span class="fu">torch_double</span>())</span>
+<span id="cb63-7"><a href="#cb63-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb63-8"><a href="#cb63-8" aria-hidden="true" tabindex="-1"></a>A <span class="ot">&lt;-</span> <span class="fu">torch_vander</span>(t, <span class="at">N =</span> n, <span class="at">increasing =</span> <span class="cn">TRUE</span>)<span class="sc">$</span><span class="fu">to</span>(</span>
+<span id="cb63-9"><a href="#cb63-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">dtype =</span> <span class="fu">torch_double</span>()</span>
+<span id="cb63-10"><a href="#cb63-10" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Condition number is very high:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb64"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a><span class="fu">linalg_cond</span>(A)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>torch_tensor
+2.27178e+10
+[ CPUDoubleType{} ]</code></pre>
+<p>Even higher is the condition number obtained when we multiply it with its transpose – remember that some algorithms actually need to work with <em>this</em> matrix:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb66"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a><span class="fu">linalg_cond</span>(A<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(A))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>torch_tensor
+7.27706e+17
+[ CPUDoubleType{} ]</code></pre>
+<p>Next, we have the prediction target:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb68"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a>b <span class="ot">&lt;-</span> <span class="fu">torch_exp</span>(<span class="fu">torch_sin</span>(<span class="dv">4</span><span class="sc">*</span>t))</span>
+<span id="cb68-2"><a href="#cb68-2" aria-hidden="true" tabindex="-1"></a>b <span class="ot">&lt;-</span> b<span class="sc">/</span><span class="fl">2006.787453080206</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>In our example above, we ended up with the same RMSE for all methods. It will be interesting to see what happens here. I’ll restrict myself to the “DIY” ones among the methods shown before. Here they are, listed again for convenience:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb69"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a><span class="co"># normal equations</span></span>
+<span id="cb69-2"><a href="#cb69-2" aria-hidden="true" tabindex="-1"></a>ls_normal_eq <span class="ot">&lt;-</span> <span class="cf">function</span>(A, b) {</span>
+<span id="cb69-3"><a href="#cb69-3" aria-hidden="true" tabindex="-1"></a>  AtA <span class="ot">&lt;-</span> A<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(A)</span>
+<span id="cb69-4"><a href="#cb69-4" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="fu">linalg_inv</span>(AtA)<span class="sc">$</span><span class="fu">matmul</span>(A<span class="sc">$</span><span class="fu">t</span>())<span class="sc">$</span><span class="fu">matmul</span>(b)</span>
+<span id="cb69-5"><a href="#cb69-5" aria-hidden="true" tabindex="-1"></a>  x</span>
+<span id="cb69-6"><a href="#cb69-6" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb69-7"><a href="#cb69-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb69-8"><a href="#cb69-8" aria-hidden="true" tabindex="-1"></a><span class="co"># normal equations and Cholesky decomposition (done manually)</span></span>
+<span id="cb69-9"><a href="#cb69-9" aria-hidden="true" tabindex="-1"></a><span class="co"># A_t A x = A_t b</span></span>
+<span id="cb69-10"><a href="#cb69-10" aria-hidden="true" tabindex="-1"></a><span class="co"># L L_t x = A_t b</span></span>
+<span id="cb69-11"><a href="#cb69-11" aria-hidden="true" tabindex="-1"></a><span class="co"># L y = A_t b  </span></span>
+<span id="cb69-12"><a href="#cb69-12" aria-hidden="true" tabindex="-1"></a><span class="co"># L_t x = y</span></span>
+<span id="cb69-13"><a href="#cb69-13" aria-hidden="true" tabindex="-1"></a>ls_cholesky_diy <span class="ot">&lt;-</span> <span class="cf">function</span>(A, b) {</span>
+<span id="cb69-14"><a href="#cb69-14" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add a small multiple of the identity matrix </span></span>
+<span id="cb69-15"><a href="#cb69-15" aria-hidden="true" tabindex="-1"></a>  <span class="co"># to counteract numerical instability</span></span>
+<span id="cb69-16"><a href="#cb69-16" aria-hidden="true" tabindex="-1"></a>  <span class="co"># if Cholesky decomposition fails in your </span></span>
+<span id="cb69-17"><a href="#cb69-17" aria-hidden="true" tabindex="-1"></a>  <span class="co"># setup, increase eps</span></span>
+<span id="cb69-18"><a href="#cb69-18" aria-hidden="true" tabindex="-1"></a>  eps <span class="ot">&lt;-</span> <span class="fl">1e-10</span></span>
+<span id="cb69-19"><a href="#cb69-19" aria-hidden="true" tabindex="-1"></a>  id <span class="ot">&lt;-</span> eps <span class="sc">*</span> <span class="fu">torch_diag</span>(<span class="fu">torch_ones</span>(<span class="fu">dim</span>(A)[<span class="dv">2</span>]))</span>
+<span id="cb69-20"><a href="#cb69-20" aria-hidden="true" tabindex="-1"></a>  AtA <span class="ot">&lt;-</span> A<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(A) <span class="sc">+</span> id</span>
+<span id="cb69-21"><a href="#cb69-21" aria-hidden="true" tabindex="-1"></a>  Atb <span class="ot">&lt;-</span> A<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(b)</span>
+<span id="cb69-22"><a href="#cb69-22" aria-hidden="true" tabindex="-1"></a>  L <span class="ot">&lt;-</span> <span class="fu">linalg_cholesky</span>(AtA)</span>
+<span id="cb69-23"><a href="#cb69-23" aria-hidden="true" tabindex="-1"></a>  y <span class="ot">&lt;-</span> <span class="fu">torch_triangular_solve</span>(</span>
+<span id="cb69-24"><a href="#cb69-24" aria-hidden="true" tabindex="-1"></a>    Atb<span class="sc">$</span><span class="fu">unsqueeze</span>(<span class="dv">2</span>),</span>
+<span id="cb69-25"><a href="#cb69-25" aria-hidden="true" tabindex="-1"></a>    L,</span>
+<span id="cb69-26"><a href="#cb69-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">upper =</span> <span class="cn">FALSE</span></span>
+<span id="cb69-27"><a href="#cb69-27" aria-hidden="true" tabindex="-1"></a>  )[[<span class="dv">1</span>]]</span>
+<span id="cb69-28"><a href="#cb69-28" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="fu">torch_triangular_solve</span>(y, L<span class="sc">$</span><span class="fu">t</span>())[[<span class="dv">1</span>]]</span>
+<span id="cb69-29"><a href="#cb69-29" aria-hidden="true" tabindex="-1"></a>  x</span>
+<span id="cb69-30"><a href="#cb69-30" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb69-31"><a href="#cb69-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb69-32"><a href="#cb69-32" aria-hidden="true" tabindex="-1"></a><span class="co"># normal equations and LU factorization (done manually)</span></span>
+<span id="cb69-33"><a href="#cb69-33" aria-hidden="true" tabindex="-1"></a><span class="co"># A_t A x = A_t b</span></span>
+<span id="cb69-34"><a href="#cb69-34" aria-hidden="true" tabindex="-1"></a><span class="co"># P L U x = A_t b</span></span>
+<span id="cb69-35"><a href="#cb69-35" aria-hidden="true" tabindex="-1"></a><span class="co"># L y = P_t A_t b          # where y = U x</span></span>
+<span id="cb69-36"><a href="#cb69-36" aria-hidden="true" tabindex="-1"></a><span class="co"># U x = y</span></span>
+<span id="cb69-37"><a href="#cb69-37" aria-hidden="true" tabindex="-1"></a>ls_lu_diy <span class="ot">&lt;-</span> <span class="cf">function</span>(A, b) {</span>
+<span id="cb69-38"><a href="#cb69-38" aria-hidden="true" tabindex="-1"></a>  AtA <span class="ot">&lt;-</span> A<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(A)</span>
+<span id="cb69-39"><a href="#cb69-39" aria-hidden="true" tabindex="-1"></a>  Atb <span class="ot">&lt;-</span> A<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(b)</span>
+<span id="cb69-40"><a href="#cb69-40" aria-hidden="true" tabindex="-1"></a>  lu <span class="ot">&lt;-</span> <span class="fu">torch_lu</span>(AtA)</span>
+<span id="cb69-41"><a href="#cb69-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(P, L, U) <span class="sc">%&lt;-%</span> <span class="fu">torch_lu_unpack</span>(lu[[<span class="dv">1</span>]], lu[[<span class="dv">2</span>]]) </span>
+<span id="cb69-42"><a href="#cb69-42" aria-hidden="true" tabindex="-1"></a>  Atb <span class="ot">&lt;-</span> P<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(Atb)</span>
+<span id="cb69-43"><a href="#cb69-43" aria-hidden="true" tabindex="-1"></a>  y <span class="ot">&lt;-</span> <span class="fu">torch_triangular_solve</span>(</span>
+<span id="cb69-44"><a href="#cb69-44" aria-hidden="true" tabindex="-1"></a>    Atb<span class="sc">$</span><span class="fu">unsqueeze</span>(<span class="dv">2</span>),</span>
+<span id="cb69-45"><a href="#cb69-45" aria-hidden="true" tabindex="-1"></a>    L,</span>
+<span id="cb69-46"><a href="#cb69-46" aria-hidden="true" tabindex="-1"></a>    <span class="at">upper =</span> <span class="cn">FALSE</span></span>
+<span id="cb69-47"><a href="#cb69-47" aria-hidden="true" tabindex="-1"></a>  )[[<span class="dv">1</span>]]</span>
+<span id="cb69-48"><a href="#cb69-48" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="fu">torch_triangular_solve</span>(y, U)[[<span class="dv">1</span>]]</span>
+<span id="cb69-49"><a href="#cb69-49" aria-hidden="true" tabindex="-1"></a>  x</span>
+<span id="cb69-50"><a href="#cb69-50" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb69-51"><a href="#cb69-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb69-52"><a href="#cb69-52" aria-hidden="true" tabindex="-1"></a><span class="co"># QR factorization</span></span>
+<span id="cb69-53"><a href="#cb69-53" aria-hidden="true" tabindex="-1"></a><span class="co"># A x = b</span></span>
+<span id="cb69-54"><a href="#cb69-54" aria-hidden="true" tabindex="-1"></a><span class="co"># Q R x = b</span></span>
+<span id="cb69-55"><a href="#cb69-55" aria-hidden="true" tabindex="-1"></a><span class="co"># R x = Q_t b </span></span>
+<span id="cb69-56"><a href="#cb69-56" aria-hidden="true" tabindex="-1"></a>ls_qr <span class="ot">&lt;-</span> <span class="cf">function</span>(A, b) {</span>
+<span id="cb69-57"><a href="#cb69-57" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(Q, R) <span class="sc">%&lt;-%</span> <span class="fu">linalg_qr</span>(A)</span>
+<span id="cb69-58"><a href="#cb69-58" aria-hidden="true" tabindex="-1"></a>  Qtb <span class="ot">&lt;-</span> Q<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(b)</span>
+<span id="cb69-59"><a href="#cb69-59" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="fu">torch_triangular_solve</span>(Qtb<span class="sc">$</span><span class="fu">unsqueeze</span>(<span class="dv">2</span>), R)[[<span class="dv">1</span>]]</span>
+<span id="cb69-60"><a href="#cb69-60" aria-hidden="true" tabindex="-1"></a>  x</span>
+<span id="cb69-61"><a href="#cb69-61" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb69-62"><a href="#cb69-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb69-63"><a href="#cb69-63" aria-hidden="true" tabindex="-1"></a><span class="co"># SVD</span></span>
+<span id="cb69-64"><a href="#cb69-64" aria-hidden="true" tabindex="-1"></a><span class="co"># A x = b</span></span>
+<span id="cb69-65"><a href="#cb69-65" aria-hidden="true" tabindex="-1"></a><span class="co"># U S V_ x = b</span></span>
+<span id="cb69-66"><a href="#cb69-66" aria-hidden="true" tabindex="-1"></a><span class="co"># S V_t x = U_t b</span></span>
+<span id="cb69-67"><a href="#cb69-67" aria-hidden="true" tabindex="-1"></a><span class="co"># S y = U_t b </span></span>
+<span id="cb69-68"><a href="#cb69-68" aria-hidden="true" tabindex="-1"></a><span class="co"># V_t x = y</span></span>
+<span id="cb69-69"><a href="#cb69-69" aria-hidden="true" tabindex="-1"></a>ls_svd <span class="ot">&lt;-</span> <span class="cf">function</span>(A, b) {</span>
+<span id="cb69-70"><a href="#cb69-70" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(U, S, Vt) <span class="sc">%&lt;-%</span> <span class="fu">linalg_svd</span>(A, <span class="at">full_matrices =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb69-71"><a href="#cb69-71" aria-hidden="true" tabindex="-1"></a>  Utb <span class="ot">&lt;-</span> U<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(b)</span>
+<span id="cb69-72"><a href="#cb69-72" aria-hidden="true" tabindex="-1"></a>  y <span class="ot">&lt;-</span> Utb <span class="sc">/</span> S</span>
+<span id="cb69-73"><a href="#cb69-73" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> Vt<span class="sc">$</span><span class="fu">t</span>()<span class="sc">$</span><span class="fu">matmul</span>(y)</span>
+<span id="cb69-74"><a href="#cb69-74" aria-hidden="true" tabindex="-1"></a>  x</span>
+<span id="cb69-75"><a href="#cb69-75" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Let’s see, then!</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb70"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a>algorithms <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb70-2"><a href="#cb70-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ls_normal_eq"</span>,</span>
+<span id="cb70-3"><a href="#cb70-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ls_cholesky_diy"</span>,</span>
+<span id="cb70-4"><a href="#cb70-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ls_lu_diy"</span>,</span>
+<span id="cb70-5"><a href="#cb70-5" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ls_qr"</span>,</span>
+<span id="cb70-6"><a href="#cb70-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ls_svd"</span></span>
+<span id="cb70-7"><a href="#cb70-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb70-8"><a href="#cb70-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb70-9"><a href="#cb70-9" aria-hidden="true" tabindex="-1"></a>rmses <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map</span>(</span>
+<span id="cb70-10"><a href="#cb70-10" aria-hidden="true" tabindex="-1"></a>  algorithms,</span>
+<span id="cb70-11"><a href="#cb70-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">function</span>(m) {</span>
+<span id="cb70-12"><a href="#cb70-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rmse</span>(</span>
+<span id="cb70-13"><a href="#cb70-13" aria-hidden="true" tabindex="-1"></a>      <span class="fu">as.numeric</span>(b),</span>
+<span id="cb70-14"><a href="#cb70-14" aria-hidden="true" tabindex="-1"></a>      <span class="fu">as.numeric</span>(A<span class="sc">$</span><span class="fu">matmul</span>(<span class="fu">get</span>(m)(A, b)))</span>
+<span id="cb70-15"><a href="#cb70-15" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb70-16"><a href="#cb70-16" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb70-17"><a href="#cb70-17" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb70-18"><a href="#cb70-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb70-19"><a href="#cb70-19" aria-hidden="true" tabindex="-1"></a>rmse_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb70-20"><a href="#cb70-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">method =</span> algorithms,</span>
+<span id="cb70-21"><a href="#cb70-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">rmse =</span> <span class="fu">unlist</span>(rmses)</span>
+<span id="cb70-22"><a href="#cb70-22" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb70-23"><a href="#cb70-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb70-24"><a href="#cb70-24" aria-hidden="true" tabindex="-1"></a>rmse_df</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>           method         rmse
+1    ls_normal_eq 2.882399e-03
+2 ls_cholesky_diy 1.373906e-06
+3       ls_lu_diy 1.274305e-07
+4           ls_qr 3.436749e-08
+5          ls_svd 3.436749e-08</code></pre>
+<p>This is pretty impressive! We clearly see how the normal equations, straightforward though they are, may not be the best option once problems cease to be well-conditioned. Cholesky as well as LU decomposition fare better; however, the clear “winners” are QR factorization and the SVD. No wonder those two (with two variants each) are the ones made use of by <code>linalg_lstsq()</code>.</p>
+
+
+<div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
+<div id="ref-2019EA000740" class="csl-entry" role="listitem">
+Cho, Dongjin, Cheolhee Yoo, Jungho Im, and Dong-Hyun Cha. 2020. <span>“Comparative Assessment of Various Machine Learning-Based Bias Correction Methods for Numerical Weather Prediction Model Forecasts of Extreme Air Temperatures in Urban Areas.”</span> <em>Earth and Space Science</em> 7 (4): e2019EA000740. https://doi.org/<a href="https://doi.org/10.1029/2019EA000740">https://doi.org/10.1029/2019EA000740</a>.
+</div>
+<div id="ref-Trefethen" class="csl-entry" role="listitem">
+Trefethen, Lloyd N., and David Bau. 1997. <em>Numerical Linear Algebra</em>. SIAM.
+</div>
+</div>
+</section>
+<section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn1"><p>The documentation for <code>driver</code> cited above is basically an excerpt from the corresponding documentation in <a href="https://www.netlib.org/lapack/lug/node27.html">LAPACK</a>, as we can easily verify, since the page in question has conveniently been linked in the documentation for <code>linalg_lstsq()</code>.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>To learn more, consider consulting one of those books, for example, the widely-used (and concise) treatment by <span class="citation" data-cites="Trefethen">Trefethen and Bau (<a href="references.html#ref-Trefethen" role="doc-biblioref">1997</a>)</span>.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p>The example is taken from the book by Trefethen and Bau referred to in the footnote above. Credits to Rachel Thomas, who brought this to my attention by virtue of using it in her <a href="https://github.com/fastai/numerical-linear-algebra">numerical linear algebra course</a>.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./other_overview.html" class="pagination-link">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Overview</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./matrix_computations_convolution.html" class="pagination-link">
+        <span class="nav-page-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Matrix computations: Convolution</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+</body></html>
