@@ -1,9 +1,3 @@
----
-editor: 
-  markdown: 
-    wrap: 72
----
-
 This is the repository for the book *Deep Learning and Scientific
 Computing with R torch*, written by [Sigrid
 Keydana](https://divergences.xyz/) and published by [CRC
