@@ -1,0 +1,466 @@
+# Matrix computations: Convolution {#sec:matrix-computations-2}
+
+In deep learning, we talk about convolutions, convolutional layers, and convolutional neural networks. However, as explained in the chapter on image processing, the thing we're referring to when doing so really is something different: cross-correlation.
+
+Formally, the difference is minor: A sign is flipped. Semantically, these are not the same at all. As we saw, cross-correlation lets us spot similarities: It serves as a *feature detector*. Convolution is harder to characterize in an abstract way. Whole books could be written on the eminent role it plays in signal processing, as well as on its mathematical significance. Here, we have to leave aside the deeper underpinnings. Instead, we hope to gain some insight into its operation - firstly, by thinking through and picturing the steps involved, and secondly, by implementing it in code. As in the previous chapter, the focus is on understanding, and creating a basis for further explorations, should you be so inclined.
+
+## Why convolution?\index{convolution (signal processing)}
+
+In signal processing, *filters* are used to modify a signal in some desired way -- for example, to cut off the high frequencies. Imagine you have the Fourier-transformed representation of a time series; meaning, a set of frequencies with associated magnitudes and phases. You'd like to set all frequencies higher than some threshold to zero. The easiest way is to multiply the set of frequencies by a sequence of ones and zeroes. If you do that, filtering is happening in the frequency domain, and often, that's by far the most convenient way.
+
+What, though, if the same result should be achieved in the time domain -- that is, working with the raw time series? In that case, you'd have to find the time-domain representation of the filter (achieved by the *Inverse Fourier Transform*). This representation would then have to be *convolved* with the time series. Put differently, convolution in the time domain corresponds to multiplication in the frequency domain. This basic fact gets made use of all the time.
+
+Now, let's try to understand better what convolution does, and how it is implemented. We begin with a single dimension, and then, explore a bit of what happens in the two-dimensional case.
+
+## Convolution in one dimension
+
+We start by creating a simple signal, `x`, and a simple filter, `h`. That choice of variable names is not a whim; in signal processing, $h$ is the usual symbol denoting the *impulse response*, a term we'll get to very soon.
+
+```{r}
+library(torch)
+
+x <- torch_arange(start = 1, end = 4) 
+h <- torch_tensor(c(-1, 0, 1))
+```
+
+Now -- given that we *do* have `torch_conv1d()` available -- why don't we call it and see what happens? The way convolution is defined, output length equals input length plus filter length, minus one. Using `torch_conv1d()`, to obtain length-six output, given a filter of length three, we need to pad it by two on both sides.
+
+In the following code, don't let the calls to `view()` distract you -- they're present only due to `torch` expecting three-dimensional input, with dimensions one and two relating to batch item and channel, as usual.
+
+```{r}
+torch_conv1d(
+  x$view(c(1, 1, 4)),
+  h$view(c(1, 1, 3)),
+  padding = 2
+)
+```
+
+    torch_tensor
+    (1,.,.) = 
+      1  2  2  2 -3 -4
+    [ CPUFloatType{1,1,6} ]
+
+But wait, you'll be thinking -- didn't we say that what `torch_conv1d()` computes is cross-correlation, not convolution? Well, R has `convolve()` -- let's double-check:[^matrix_computations_convolution-1]
+
+[^matrix_computations_convolution-1]: The argument `type = "open"` is passed to request linear, not circular, convolution.
+
+```{r}
+x_ <- as.numeric(x)
+h_ <- as.numeric(h)
+
+convolve(x_, h_, type = "open")
+```
+
+    [1]  1  2  2  2 -3 -4
+
+The result is the same. However, looking into the documentation for `convolve()`, we see:
+
+> Note that the usual definition of convolution of two sequences `x` and `y` is given by `convolve(x, rev(y), type = "o")`.
+
+Evidently, we need to reverse the order of items in the filter:
+
+```{r}
+convolve(x_, rev(h_), type = "open")
+```
+
+    [1] -1 -2 -2 -2  3  4
+
+Indeed, the result is different now. Let's do the same with `torch_conv1d()`:
+
+```{r}
+torch_conv1d(
+  x$view(c(1, 1, 4)),
+  h$flip(1)$view(c(1, 1, 3)),
+  padding = 2
+)
+```
+
+    torch_tensor
+    (1,.,.) = 
+     -1 -2 -2 -2  3  4
+    [ CPUFloatType{1,1,6} ]
+
+Again, the outcome is the same between `torch` and R. So: That laconic phrase, found in the "Details" section of `convolve()`'s documentation, captures the complete difference between cross-correlation and convolution: In convolution, the second argument is reversed. Or *flipped*, in signal-processing speak. ("Flipped", indeed, happens to be a far better term, since it generalizes to higher dimensions.)
+
+Technically, the difference is tiny -- just a change in sign. But mathematically, it is essential -- in the sense that it directly derives from what a filter *is*, and what it *does*. We'll be able to get some insight into this soon.
+
+The operation underlying convolution can be pictured in two ways.
+
+### Two ways to think about convolution\index{convolution!two ways to think about}
+
+For one, we can look at a single output value and determine how it comes about. That is, we ask which input elements contribute to its value, and how those are being combined. This may be called the "output view", and it's one we're already familiar with from cross-correlation.
+
+As to cross-correlation, we described it like this. A filter "slides" over an image, and at each image location (pixel), we sum up the products of surrounding input pixels with the corresponding "overlayed" filter values. Put differently, each output pixel results from computing the *dot product* between matched input and filter values.
+
+The second way of looking at things is from the point of view of the input (named, accordingly, the "input view"). It asks: In what way does each input value contribute to the output? This view takes some more getting-used-to than the first; but maybe that's just a matter of socialization -- the manner in which the topic is usually presented in a neural-networks context. In any case, the input view is highly instructive, in that it allows us to learn about the mathematical *meaning* of convolution.
+
+We're going to look at both, starting with more familiar one, the output view.
+
+#### Output view
+
+In the output view, we start by padding the input signal on both sides, just like we did when calling `torch_conv2d()` with `padding = 2`. As required, we flip the impulse response, turning it into `1, 0, -1`. Then, we picture the "sliding".
+
+Below, you find this visualized in tabular form (@tbl-convolution-output). The bottom row holds the result, obtained from summing up the individual products at each position.
+
+|     Signal | Flipped IR |      |      |      |      |      |
+|-----------:|-----------:|-----:|-----:|-----:|-----:|-----:|
+|        `0` |        `1` |      |      |      |      |      |
+|        `0` |        `0` |  `1` |      |      |      |      |
+|        `1` |       `-1` |  `0` |  `1` |      |      |      |
+|        `2` |            | `-1` |  `0` |  `1` |      |      |
+|        `3` |            |      | `-1` |  `0` |  `1` |      |
+|        `4` |            |      |      | `-1` |  `0` |  `1` |
+|        `0` |            |      |      |      | `-1` |  `0` |
+|        `0` |            |      |      |      |      | `-1` |
+| **Result** |       `-1` | `-2` | `-2` | `-2` |  `3` |  `4` |
+
+: Convolution: Output view. {#tbl-convolution-output}
+
+After all we've said on the topic, this depiction should offer few surprises. On to the input view.
+
+#### Input view
+
+The essential thing about the input view is the way we conceptualize the input signal: Each individual element is seen as a -- *scaled* and *shifted -- impulse*.
+
+The *impulse* is given by the *unit sample* (or: impulse) function, delta ($\delta$). This function is zero everywhere, except at zero, where its value is one:
+
+$$
+\delta [n]={\begin{cases}1\ \ \ if \ n=0\\0\ \ \ if \ n \ne 0\end{cases}}
+$$
+
+This is like a Kronecker delta, $\delta_{ij}$[^matrix_computations_convolution-2], with one of the indices being fixed at 0:
+
+[^matrix_computations_convolution-2]: The Kronecker delta, $\delta_{ij}$, evaluates to one if $i$ equals $j$, and to zero, otherwise.
+
+$$
+\delta [n]= \delta _{n0}= \delta _{0n}
+$$
+
+Thus, equipped with only that function, $\delta[n]$ -- with $n$ representing discrete time, say -- we can represent exactly one signal value, the one at time $n = 0$[^matrix_computations_convolution-3], and its only possible value is `1`. Now we add to this the operations *scale* and *shift*.
+
+[^matrix_computations_convolution-3]: I'm using $n$, instead of $t$, to index into different positions, because the signal -- like any digitized one -- only "exists" at discrete points in time (or space). In some contexts, this reads a bit awkward, but it at least is consistent.
+
+-   By scaling, we can produce any value at $n = 0$; for example: $x_0 = 0 * \delta [n]$.
+
+-   By shifting, we can affect values at other points in time. For example, time $n = 3$ can be addressed as $\delta [n - 3]= \delta _{n3}$, since $n - 3 = 0$.
+
+-   Combining both, we can represent any value at any point in time. For example: $x_5 = 1.11 * \delta [n - 5]$.
+
+So far, we've talked just about the signal. What about the filter? Just like the impulse is essential in characterizing a signal, a filter is completely described by its *impulse response*[^matrix_computations_convolution-4]. The impulse response, by definition, is what comes out when the input is an impulse (that is, happens at time $n = 0$). In notation analogous to that used for the signal, with $h$ denoting the impulse response, we have:
+
+[^matrix_computations_convolution-4]: Like everywhere in the chapter, when I talk of filters, I think of linear time-invariant systems only. The restriction to time-invariant systems is immanent in the convolution operation.
+
+$$
+h[n] = h[n- 0] \equiv h(\delta[n- 0]) 
+$$
+
+In our example, that would be the sequence `-1, 0, 1`. But just like the signal needs to be represented at additional times, not just at $0$, the filter has to be applicable to other positions, as well. To that purpose, again, a shift operation is employed, and it is formalized in an analogous way: For instance, $h[n - 1]$ means the filter is applied to time $1$, the time when $n - 1$ equals zero. These shifts correspond to what we informally refer to as "sliding".
+
+Now, all that remains to be done is combine the pieces. At time $n = 0$, we take the un-shifted impulse response, and *scale* it by the amplitude of the signal. In our example, that value was $1$. Thus: $1 * h[n - 0] = 1 * [-1, 0, 1] = [-1, 0, 1]$. For the other times, we shift the impulse response to the input position in question, and multiply. Finally, once we've obtained all contributions from all input positions, we add them up, thus obtaining the convolved output.
+
+The following table aims to illustrate that (@tbl-convolution-input):
+
+|  Signal | Impulse response |             Product |
+|--------:|-----------------:|--------------------:|
+|     `1` |       `h[n - 0]` | `-1  0  1  0  0  0` |
+|     `2` |       `h[n - 1]` |  `0 -2  0  2  0  0` |
+|     `3` |       `h[n - 2]` |  `0  0 -3  0  3  0` |
+|     `4` |       `h[n - 3]` |  `0  0  0 -4  0  4` |
+| **Sum** |                  | `-1 -2 -2 -2  3  4` |
+
+: Convolution: Input view. {#tbl-convolution-input}
+
+Personally, while I do find the output view easier to grasp, I feel I can derive more insight from the input view. In particular, it answers the -- unavoidable -- question: So *why* do we flip the impulse response?
+
+It turns out that, far from being due to whatever mysterious forces, the minus sign is merely a mechanical outcome of the *way signals are represented*: The signal measured at time $n = 2$ is denoted by $\delta [n - 2]$ (two minus two yielding zero); and the filter applied to that signal, accordingly, as $h[n -2]$.
+
+### Implementation
+
+From the way I've described the output view, you may well think there's not much to say about how to code this. It looks straightforward: Loop over the input vector, and compute the dot product at every prospective output position. But that would mean calculating many vector products, the more, the longer the input sequence.
+
+Fortunately, there is a better way. Single-dimension (linear) convolution is computed by means of Toeplitz matrices, matrices that have some number of constant diagonals, and values of zero everywhere else. Once the filter has been formulated as a Toeplitz matrix, there is just a single multiplication to be carried out: that of the Toeplitz matrix and the input. And even though the matrix will need to have as many columns as the input has values (otherwise we couldn't do the multiplication), computational cost is small due to the matrix's being "nearly empty".
+
+Here is such a Toeplitz matrix\index{convolution!Toeplitz matrix}, constructed for our running example:
+
+```{r}
+h <-torch_tensor(
+  rbind(c(-1, 0, 0, 0),
+        c(0, -1, 0, 0),
+        c(1, 0, -1, 0),
+        c(0, 1, 0, -1),
+        c(0, 0, 1, 0),
+        c(0, 0, 0, 1)
+        ))
+h
+```
+
+    torch_tensor
+    -1  0  0  0
+     0 -1  0  0
+     1  0 -1  0
+     0  1  0 -1
+     0  0  1  0
+     0  0  0  1
+    [ CPUFloatType{6,4} ]
+
+Let's check that multiplication with our example input yields the expected result:
+
+```{r}
+h$matmul(x)
+```
+
+    torch_tensor
+    -1
+    -2
+    -2
+    -2
+     3
+     4
+    [ CPUFloatType{6} ]
+
+It does. Now, let's move on to two dimensions. Conceptually, there is no difference, but actual computation (both "by hand" and using matrices) gets a lot more involved. Thus, we'll content ourselves with presenting a (generalizeable) part of the manual calculation, and, in the computational part, don't aim at elucidating every single detail.
+
+## Convolution in two dimensions
+
+To show how, conceptually, one-dimensional and two-dimensional convolution are analogous, we assume the output view.
+
+### How it works (output view)
+
+This time, the example input is two-dimensional. It could look like this:
+
+$$
+\begin{bmatrix}
+  1 & 4 & 1\\
+  2 & 5 & 3\\
+\end{bmatrix}
+$$
+
+The same goes for the filter. Here is a possible one:
+
+$$
+\begin{bmatrix}
+  1 & 1\\
+  1 & -1\\
+\end{bmatrix}
+$$
+
+We take the output view, the one where the filter "slides" over the input. But, to keep things readable, let me just pick a single output value ("pixel") for demonstration. If the input is of size `m1 x n1`, and the filter, `m2 x n2`, the output will have size `(m1 + m2 - 1) x (n1 + n2 - 1)`; thus, it will be `3 x 4` in our case. I'll pick the value at position `(0, 1)` -- counting rows from the bottom, as is usual in image processing:
+
+$$
+\begin{bmatrix}
+  . & . & . & .\\
+  . & . & . & .\\
+  . & y_{01} & . & .\\
+\end{bmatrix}
+$$
+
+Here is the input, displayed in a table that will allow us to picture elements at non-existing (negative) positions.
+
+| Position (x/y) | -1  | 0   | 1   | 2   |
+|----------------|-----|-----|-----|-----|
+| **1**          |     | 1   | 4   | 1   |
+| **0**          |     | 2   | 5   | 3   |
+| **-1**         |     |     |     |     |
+
+And here, the filter, with values arranged correspondingly:
+
+| Position (x/y) | -1  | 0   | 1   | 2   |
+|----------------|-----|-----|-----|-----|
+| **1**          |     | 1   | 1   |     |
+| **0**          |     | 1   | -1  |     |
+| **-1**         |     |     |     |     |
+
+As in the one-dimensional case, the first thing to be done is flip the filter. Flipping here means rotation by hundred-eighty degrees.
+
+| Position (x/y) | -1  | 0   | 1   | 2   |
+|----------------|-----|-----|-----|-----|
+| **1**          |     |     |     |     |
+| **0**          | -1  | 1   |     |     |
+| **-1**         | 1   | 1   |     |     |
+
+Next, the filter is shifted to the desired output position. What we want to do is shift to the right by one, leaving unaffected vertical position.
+
+| Position (x/y) | -1  | 0   | 1   | 2   |
+|----------------|-----|-----|-----|-----|
+| **1**          |     |     |     |     |
+| **0**          |     | -1  | 1   |     |
+| **-1**         |     | 1   | 1   |     |
+
+Now we are all set to compute the output value at position `(0, 1)`. It's the dot product of all overlapping image and filter values:
+
+| Position (x/y) | -1  |    0     |   1    |  2  |
+|:--------------:|:---:|:--------:|:------:|:---:|
+|     **1**      |     |          |        |     |
+|     **0**      |     | -1\*2=-2 | 1\*5=5 |     |
+|     **-1**     |     |          |        |     |
+
+The final result, then, is `-2 + 5 = 3`.
+
+$$
+\begin{bmatrix}
+  . & . & . & .\\
+  . & . & . & .\\
+  . & 3 & . & .\\
+\end{bmatrix}
+$$
+
+All values still missing can be computed in an analogous way. But we'll skip that exercise, and take a look at how an actual computation would proceed.
+
+### Implementation
+
+The way two-dimensional convolution is actually implemented in code again involves Toeplitz matrices. Like I already said, we won't go into why exactly every step takes the *exact form* it takes -- the intent here is to show a working example, an example you could build on, if you wanted, for your own explorations.
+
+#### Step one: Prepare filter matrix
+
+We start by padding the filter to the output size, `3 x 4`.
+
+    0  0 0 0
+    1  1 0 0
+    1 -1 0 0
+
+We then create a Toeplitz matrix for every row in the filter, starting at the bottom.
+
+    # H0
+     1  0  0  
+    -1  1  0  
+     0 -1  1  
+     0  0 -1  
+     
+    # H1
+     1  0  0  
+     1  1  0  
+     0  1  1  
+     0  0  1  
+     
+    # H2
+     0  0  0  
+     0  0  0  
+     0  0  0  
+
+In code, we have:
+
+```{r}
+H0 <- torch_tensor(
+  cbind(
+    c(1, -1, 0, 0),
+    c(0, 1, -1, 0),
+    c(0, 0, 1, -1)
+  )
+)
+
+H1 <- torch_tensor(
+  cbind(
+    c(1, 1, 0, 0),
+    c(0, 1, 1, 0),
+    c(0, 0, 1, 1)
+  )
+)
+
+H2 <- torch_tensor(0)$unsqueeze(1)
+```
+
+Next, these three matrices are assembled so as to form a *doubly-blocked Toeplitz* *matrix*. Like so:
+
+    H0   0
+    H1  H0
+    H2  H1
+
+One way of coding this is to (twice) use `torch_block_diag()` to build up the two non-zero blocks, and concatenate them:
+
+```{r}
+H <- torch_cat(
+  list(
+    torch_block_diag(list(H0, H0)), torch_zeros(4, 6)
+  )
+) +
+  torch_cat(
+    list(
+      torch_zeros(4, 6),
+      torch_block_diag(list(H1, H1))
+    )
+  )
+
+H
+```
+
+    torch_tensor
+     1  0  0  0  0  0
+    -1  1  0  0  0  0
+     0 -1  1  0  0  0
+     0  0 -1  0  0  0
+     1  0  0  1  0  0
+     1  1  0 -1  1  0
+     0  1  1  0 -1  1
+     0  0  1  0  0 -1
+     0  0  0  1  0  0
+     0  0  0  1  1  0
+     0  0  0  0  1  1
+     0  0  0  0  0  1
+    [ CPUFloatType{12,6} ]
+
+The final matrix has two non-zero "bands", separated by two all-zero diagonals. This is the final form of the filter needed for matrix multiplication.
+
+#### Step two: Prepare input
+
+To be multiplicable with this `12 x 6` matrix, the input needs to be flattened into a vector. Again, we proceed row-by-row, starting from the bottom here as well.
+
+```{r}
+x0 <- torch_tensor(c(2, 5, 3)) 
+x1 <- torch_tensor(c(1, 4, 1))
+
+x <- torch_cat(list(x0, x1))
+x
+```
+
+    torch_tensor
+     2
+     5
+     3
+     1
+     4
+     1
+    [ CPUFloatType{6} ]
+
+#### Step three: Multiply
+
+By now, convolution has morphed into straightforward matrix multiplication:
+
+```{r}
+y <- H$matmul(x)
+y
+```
+
+    torch_tensor
+      2
+      3
+     -2
+     -3
+      3
+     10
+      5
+      2
+      1
+      5
+      5
+      1
+    [ CPUFloatType{12} ]
+
+All that remains to be done is reshape the output into the correct two-dimensional structure. Building up the rows in order (again, bottom-first) we obtain:
+
+$$
+\begin{bmatrix}
+  1 & 5 & 5 & 1\\
+  3 & 10 & 5 & 2\\
+  2 & 3 & -2 & -3\\
+\end{bmatrix}
+$$
+
+Looking at element `(0, 1)`, we see that the computation confirms our manual calculation.
+
+Herewith, we conclude the topic of matrix computations with `torch`. But, as we move on to our next topic, the Fourier transform, we won't actually stray that far away. Remember how, above, we said that time-domain convolution corresponds to frequency-domain multiplication?
+
+This correspondence is often used to speed up computation: The input data are Fourier-transformed, the result is multiplied by the filter, and the filtered frequency-domain representation is transformed back again. Just have a look at the documentation for R's `convolve()`. It directly starts out stating:
+
+> Use the Fast Fourier Transform to compute the several kinds of convolutions of two sequences.
+
+On to the Fourier Transform, then!

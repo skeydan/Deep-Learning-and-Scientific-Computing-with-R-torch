@@ -1,0 +1,283 @@
+# Function minimization with L-BFGS {#sec:optim-2}
+
+Now that we've become acquainted with `torch` modules and optimizers, we can go back to the two tasks we already approached without either: function minimization, and training a neural network. Again, we start with minimization, and leave the network to the next chapter.
+
+Thinking back to what we did when minimizing the Rosenbrock function, in essence it was this:
+
+1.  Define a tensor to hold the parameter to be optimized, namely, the $\mathbf{x}$-position where the function attains its minimum.
+
+2.  Iteratively update the parameter, subtracting a fraction of the current gradient.
+
+While as a strategy, this was straightforward, a problem remained: How big a fraction of the gradient should we subtract? It's exactly here that optimizers come in useful.
+
+## Meet L-BFGS\index{L-BFGS (optimizer)}
+
+So far, we've only talked about the kinds of optimizers often used in deep learning -- stochastic gradient descent (SGD), SGD with momentum, and a few classics from the *adaptive* *learning rate* family: RMSProp, Adadelta, Adagrad, Adam. All these have in common one thing: They only make use of the *gradient*, that is, the vector of first derivatives. Accordingly, they are all *first-order* algorithms. This means, however, that they are missing out on helpful information provided by the *Hessian*, the matrix of second derivatives.
+
+### Changing slopes
+
+First derivatives tell us about the *slope* of the landscape: Does it go up? Does it go down? How much so? Going a step further, second derivatives encode how much that slope *changes*.
+
+Why should that be important?
+
+Assume we're at point $\mathbf{x}_n$, and have just decided on a suitable descent direction. We take a step, of length determined by some pre-chosen learning rate, all set to arrive at point $\mathbf{x}_{n+1}$. What we don't know is how the slope will have changed by the time we'll have gotten there. Maybe it's become much flatter in the meantime: In this case, we'll have gone way too far, overshooting and winding up in a far-off area where anything could have happened in-between (including the slope going *up* again!).
+
+We can illustrate this on a function of a single variable. Take a parabola, such as
+
+$$
+y = 10x^2
+$$
+
+Its derivative is $\frac{dy}{dx} = 20x$. If our current $x$ is, say, $3$, and we work with a learning rate of $0.1$, we'll subtract $20 * 3 * 0.1= 6$, winding up at $-3$.
+
+But say we had slowed down at $2$ and inspected the current slope. We'd have seen that there, the slope was less steep; in fact, when at that point, we should just have subtracted $20 * 2 * 0.1= 4$.
+
+By sheer luck, this "close-your-eyes-and-jump" strategy can still work out -- *if* we happen to be using just the right learning rate for the function in question. (At the chosen learning rate, this would have been the case for a different parabola, $y = 5x^2$, for example.) But wouldn't it make sense to include second derivatives in the decision from the outset?
+
+Algorithms that do this form the family of Newton methods. First, we look at their "purest" specimen, which best illustrates the principle but seldom is feasible in practice.
+
+### Exact Newton method
+
+In higher dimensions, the exact Newton method multiplies the gradient by the inverse of the Hessian, thus scaling the descent direction coordinate-by-coordinate. Our current example has just a single independent variable; so this means for us: take the first derivative, and divide by the second.
+
+We now have a scaled gradient -- but what portion of it should we subtract? In its original version, the exact Newton method does not make use of a learning rate, thus freeing us of the familiar trial-and-error game. Let's see, then: In our example, the second derivative is $20$, meaning that at $x=3$ we have to subtract $(20 * 3)/20=3$. Voilà, we end up at $0$, the location of the minimum, in a single step.
+
+Seeing how that turned out just great, why don't we do it all the time? For one, it will work perfectly only with quadratic functions, like the one we chose for the demonstration. In other cases, it, too, will normally need some "tuning", for example, by using a learning rate here as well.
+
+But the main reason is another one. In more realistic applications, and certainly in the areas of machine learning and deep learning, computing the inverse of the Hessian at every step is way too costly. (It may, in fact, not even be possible.) This is where *approximate*, a.k.a. *Quasi-Newton*, methods come in.
+
+### Approximate Newton: BFGS and L-BFGS
+
+Among approximate Newton methods, probably the most-used is the *Broyden-Goldfarb-Fletcher-Shanno* algorithm, or *BFGS*. Instead of continually computing the exact inverse of the Hessian, it keeps an iteratively-updated approximation of that inverse. BFGS is often implemented in a more memory-friendly version, referred to as *Limited-Memory BFGS* (*L-BFGS*). This is the one provided as part of the core `torch` optimizers.
+
+Before we get there, though, there is one last conceptual thing to discuss.
+
+### Line search
+
+Like their exact counterpart, approximate Newton methods can work without a learning rate. In that case, they compute a descent direction and follow the scaled gradient as-is. We already talked about how, depending on the function in question, this can work more or less well. When it does not, there are two things one could do: Firstly, take small steps, or put differently, introduce a learning rate. And secondly, do a *line search*.
+
+With line search, we spend some time evaluating how far to follow the descent direction. There are two principal ways of doing this.
+
+The first, *exact* line search, involves yet another optimization problem: Take the current point, compute the descent direction, and hard-code them as givens in a *second* function that depends on the learning rate only. Then, differentiate this function to find *its* minimum. The solution will be the learning rate that optimizes the step length taken.
+
+The alternative strategy is to do an approximate search. By now, you're probably not surprised: Just as approximate Newton is more realistically-feasible than exact Newton, approximate line search is more practicable than exact line search.
+
+For line search, approximating the best solution means following a set of proven heuristics. Essentially, we look for something that is *just* *good enough*. Among the most established heuristics are the *Strong Wolfe conditions*, and this is the strategy implemented in `torch`'s `optim_lbfgs()`. In the next section, we'll see how to use `optim_lbfgs()` to minimize the Rosenbrock function, both with and without line search.
+
+## Minimizing the Rosenbrock function with `optim_lbfgs()`
+
+Here is the Rosenbrock function again:
+
+```{r}
+library(torch)
+
+a <- 1
+b <- 5
+
+rosenbrock <- function(x) {
+  x1 <- x[1]
+  x2 <- x[2]
+  (a - x1)^2 + b * (x2 - x1^2)^2
+}
+```
+
+In our manual minimization efforts, the procedure was the following. A one-time action, we first defined the parameter tensor destined to hold the current $\mathbf{x}$:
+
+```{r}
+x <- torch_tensor(c(-1, 1), requires_grad = TRUE)
+```
+
+Then, we iteratively executed the following operations:
+
+1.  Calculate the function value at the current $\mathbf{x}$.
+
+2.  Compute the gradient of that value at the position in question.
+
+3.  Subtract a fraction of the gradient from the current $\mathbf{x}$.
+
+How, if so, does that blueprint change?
+
+The first step remains unchanged. We still have
+
+```{r}
+value <- rosenbrock(x)
+```
+
+The second step stays the same, as well. We still call `backward()` directly on the output tensor:
+
+```{r}
+value$backward()
+```
+
+This is because an optimizer does not *compute* gradients; it *decides what to do with the gradient* once it's been computed.
+
+What changes, thus, is the third step, the one that also was the most cumbersome. Now, it is the optimizer that applies the update. To be able to do that, there is a prerequisite: Prior to starting the loop, the optimizer will need to be told which parameter it is supposed to work on. In fact, this is so important that you can't even create an optimizer without passing it that parameter:
+
+```{r}
+opt <- optim_lbfgs(x)
+```
+
+In the loop, we now call the `step()` method on the optimizer object to update the parameter. There is just one part from our manual procedure that needs to get carried over to the new way: We still need to zero out the gradient on each iteration. Just this time, not on the parameter tensor, `x`, but the optimizer object itself. *In principle*, this then yields the following actions to be performed on each iteration:
+
+```{r}
+value <- rosenbrock(x)
+
+opt$zero_grad()
+value$backward()
+
+opt$step()
+```
+
+Why "in principle"? In fact, this is what we'd write for every optimizer *but* `optim_lbfgs()`.
+
+For `optim_lbfgs()`, `step()` needs to be called passing in an anonymous function, a closure. Zeroing of previous gradients, function call, and gradient calculation, all these happen inside the closure:
+
+```{r}
+calc_loss <- function() {
+  optimizer$zero_grad()
+  value <- rosenbrock(x_star)
+  value$backward()
+  value
+}
+
+
+```
+
+Having executed those actions, the closure returns the function value. Here is how it is called by `step()`:
+
+```{r}
+for (i in 1:num_iterations) {
+  optimizer$step(calc_loss)
+}
+```
+
+Now we put it all together, add some logging output, and compare what happens with and without line search.
+
+### `optim_lbfgs()` default behavior
+
+As a baseline, we first run without line search. Two iterations are enough. In the below output, you can see that in each iteration, the closure is evaluated several times. This is the technical reason we had to create it in the first place.
+
+```{r}
+num_iterations <- 2
+
+x <- torch_tensor(c(-1, 1), requires_grad = TRUE)
+
+optimizer <- optim_lbfgs(x)
+
+calc_loss <- function() {
+  optimizer$zero_grad()
+
+  value <- rosenbrock(x)
+  cat("Value is: ", as.numeric(value), "\n")
+
+  value$backward()
+  value
+}
+
+for (i in 1:num_iterations) {
+  cat("\nIteration: ", i, "\n")
+  optimizer$step(calc_loss)
+}
+
+
+```
+
+    Iteration:  1 
+    Value is:  4 
+    Value is:  6 
+    Value is:  318.0431 
+    Value is:  5.146369 
+    Value is:  4.443705 
+    Value is:  0.8787204 
+    Value is:  0.8543001 
+    Value is:  2.001667 
+    Value is:  0.5656172 
+    Value is:  0.400589 
+    Value is:  7.726219 
+    Value is:  0.3388008 
+    Value is:  0.2861604 
+    Value is:  1.951176 
+    Value is:  0.2071857 
+    Value is:  0.150776 
+    Value is:  0.411357 
+    Value is:  0.08056168 
+    Value is:  0.04880721 
+    Value is:  0.0302862 
+
+    Iteration:  2 
+    Value is:  0.01697086 
+    Value is:  0.01124081 
+    Value is:  0.0006622815 
+    Value is:  3.300996e-05 
+    Value is:  1.35731e-07 
+    Value is:  1.111701e-09 
+    Value is:  4.547474e-12 
+
+To make sure we really have found the minimum, we check `x`:
+
+```{r}
+x
+```
+
+    torch_tensor
+     1.0000
+     1.0000
+    [ CPUFloatType{2} ]
+
+Can this still be improved upon?
+
+### `optim_lbfgs()` with line search
+
+Let's see. Below, the only line that's changed is the one where we construct the optimizer.
+
+```{r}
+num_iterations <- 2
+
+x <- torch_tensor(c(-1, 1), requires_grad = TRUE)
+
+optimizer <- optim_lbfgs(x, line_search_fn = "strong_wolfe")
+
+calc_loss <- function() {
+  optimizer$zero_grad()
+
+  value <- rosenbrock(x)
+  cat("Value is: ", as.numeric(value), "\n")
+
+  value$backward()
+  value
+}
+
+for (i in 1:num_iterations) {
+  cat("\nIteration: ", i, "\n")
+  optimizer$step(calc_loss)
+}
+```
+
+    Iteration:  1 
+    Value is:  4 
+    Value is:  6 
+    Value is:  3.802412 
+    Value is:  3.680712 
+    Value is:  2.883048 
+    Value is:  2.5165 
+    Value is:  2.064779 
+    Value is:  1.38384 
+    Value is:  1.073063 
+    Value is:  0.8844351 
+    Value is:  0.5554555 
+    Value is:  0.2501077 
+    Value is:  0.8948895 
+    Value is:  0.1619074 
+    Value is:  0.06823064 
+    Value is:  0.01653575 
+    Value is:  0.004060207 
+    Value is:  0.00353789 
+    Value is:  0.000391416 
+    Value is:  4.303527e-06 
+    Value is:  2.036851e-08 
+    Value is:  6.870948e-12 
+
+    Iteration:  2 
+    Value is:  6.870948e-12 
+
+With line search, a single iteration is sufficient to reach the minimum. Inspecting the individual losses, we also see that the algorithm reduces the loss nearly every time it probes the function, which without line search, had not been the case.

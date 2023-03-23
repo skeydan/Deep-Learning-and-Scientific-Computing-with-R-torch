@@ -1,0 +1,106 @@
+# Modularizing the neural network {#sec:network-2}
+
+Let's recall the network we built a few chapters ago. Its purpose was regression, but its method was not *linear*. Instead, an activation function (ReLU, for "rectified linear unit") introduced a nonlinearity, located between the single hidden layer and the output layer. The "layers", in this original implementation, were just tensors: weights and biases. You won't be surprised to hear that these will be replaced by *modules*.
+
+How will the training process change? Conceptually, we can distinguish four phases: the forward pass, loss computation, backpropagation of gradients, and weight updating. Let's think about where our new tools will fit in:
+
+-   The forward pass, instead of calling functions on tensors, will call the model.
+
+-   In computing the loss, we now make use of `torch`'s `nnf_mse_loss()`.
+
+-   Backpropagation of gradients is, in fact, the only operation that remains unchanged.
+
+-   Weight updating is taken care of by the optimizer.
+
+Once we've made those changes, the code will be more modular, and a lot more readable.
+
+## Data
+
+As a prerequisite, we generate the data, same as last time.
+
+```{r}
+# input dimensionality (number of input features)
+d_in <- 3
+# number of observations in training set
+n <- 100
+
+x <- torch_randn(n, d_in)
+coefs <- c(0.2, -1.3, -0.5)
+y <- x$matmul(coefs)$unsqueeze(2) + torch_randn(n, 1)
+
+
+```
+
+## Network
+
+With two linear layers connected via ReLU activation, the easiest choice is a sequential module, very similar to the one we saw in the introduction to modules:
+
+```{r}
+# dimensionality of hidden layer
+d_hidden <- 32
+# output dimensionality (number of predicted features)
+d_out <- 1
+
+net <- nn_sequential(
+  nn_linear(d_in, d_hidden),
+  nn_relu(),
+  nn_linear(d_hidden, d_out)
+)
+```
+
+## Training
+
+Here is the updated training process. We use the Adam optimizer, a popular choice.
+
+```{r}
+
+opt <- optim_adam(net$parameters)
+
+### training loop --------------------------------------
+
+for (t in 1:200) {
+  
+  ### -------- Forward pass --------
+  y_pred <- net(x)
+  
+  ### -------- Compute loss -------- 
+  loss <- nnf_mse_loss(y_pred, y)
+  if (t %% 10 == 0)
+    cat("Epoch: ", t, "   Loss: ", loss$item(), "\n")
+  
+  ### -------- Backpropagation --------
+  opt$zero_grad()
+  loss$backward()
+  
+  ### -------- Update weights -------- 
+  opt$step()
+
+}
+```
+
+    Epoch:  10    Loss:  2.549933 
+    Epoch:  20    Loss:  2.422556 
+    Epoch:  30    Loss:  2.298053 
+    Epoch:  40    Loss:  2.173909 
+    Epoch:  50    Loss:  2.0489 
+    Epoch:  60    Loss:  1.924003 
+    Epoch:  70    Loss:  1.800404 
+    Epoch:  80    Loss:  1.678221 
+    Epoch:  90    Loss:  1.56143 
+    Epoch:  100    Loss:  1.453637 
+    Epoch:  110    Loss:  1.355832 
+    Epoch:  120    Loss:  1.269234 
+    Epoch:  130    Loss:  1.195116 
+    Epoch:  140    Loss:  1.134008 
+    Epoch:  150    Loss:  1.085828 
+    Epoch:  160    Loss:  1.048921 
+    Epoch:  170    Loss:  1.021384 
+    Epoch:  180    Loss:  1.0011 
+    Epoch:  190    Loss:  0.9857832 
+    Epoch:  200    Loss:  0.973796 
+
+In addition to shortening and streamlining the code, our changes have made a big difference performance-wise.
+
+## What's to come
+
+You now know a lot about how `torch` works, and how to use it to minimize a cost function in various settings: for example, to train a neural network. But for real-world applications, there is a lot more `torch` has to offer. The next -- and most voluminous -- part of the book focuses on deep learning.

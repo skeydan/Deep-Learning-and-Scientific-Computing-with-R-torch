@@ -1,0 +1,306 @@
+# A neural network from scratch {#sec:network-1}
+
+In this chapter, we are going to solve a regression\index{regression} task. But wait -- not the `lm` way. We'll be building a real neural network, making use of tensors only (`autograd`-enabled ones, it goes without saying). Of course, this is not how you'll be using `torch`, later; but this does not make it a useless endeavor. On the contrary. Having seen the raw mechanics, you'll be able to appreciate even more the hard work that `torch` saves you. What's more, understanding the basics will be an efficient antidote against the surprisingly common temptation to think of deep learning as some kind of "magic". It's all just matrix computations; one has to learn how to orchestrate them though.
+
+Let's start with what we need for a network that can perform regression.
+
+## Idea
+
+In a nutshell, a network is a *function* from inputs to outputs. A suitable function, thus, is what we're looking for.
+
+To find it, let's first think of regression as *linear* regression. What linear regression does is multiply and add. For each independent variable, there is a *coefficient* that multiplies it. On top of that, there is a so-called *bias* term that gets added at the end. (In two dimensions, regression coefficient and bias correspond to slope and x-intercept of the regression line.)
+
+Thinking about it, multiplication and addition are things we can do with tensors -- one could even say they are made for exactly that. Let's take an example where the input data consist of a hundred observations, with three features each. For example:
+
+```{r}
+library(torch)
+
+x <- torch_randn(100, 3)
+x$size()
+```
+
+    [1] 100   3
+
+To store the per-feature coefficients that should multiply `x`, we need a column vector of length 3, the number of features. Alternatively, preparing for a modification we're going to make very soon, this can be a matrix whose columns are of length three, that is, a matrix with three rows. How many columns should it have? Let's say we want to predict a single output feature. In that case, the matrix should be of size 3 x 1.
+
+Here comes a suitable candidate, initialized randomly. Note how the tensor is created with `requires_grad = TRUE`, as it represents a parameter we'll want the network to *learn*.
+
+```{r}
+w <- torch_randn(3, 1, requires_grad = TRUE)
+```
+
+The bias tensor then has to be of size 1 x 1:
+
+```{r}
+b <- torch_zeros(1, 1, requires_grad = TRUE)
+```
+
+Now, we can get a "prediction" by multiplying the data with the weight\index{weight} matrix `w` and adding the bias\index{bias} `b`:
+
+```{r}
+y <- x$matmul(w) + b
+print(y, n = 10)
+```
+
+    torch_tensor
+    -2.1600
+    -3.3244
+     0.6046
+     0.4472
+    -0.4971
+    -0.0530
+     5.1259
+    -1.1595
+    -0.5960
+    -1.4584
+    ... [the output was truncated (use n=-1 to disable)]
+    [ CPUFloatType{100,1} ][ grad_fn = <AddBackward0> ]
+
+In math notation, what we've done here is implement the function:
+
+$$
+f(\mathbf{X}) = \mathbf{X}\mathbf{W} + \mathbf{b}
+$$
+
+How does this relate to neural networks?
+
+## Layers
+
+Circling back to neural-network terminology, what we've done here is prototype the action of a network that has a *single* *layer*\index{layer}: the output layer. However, a single-layer network is hardly the type you'd be interested in building -- why would you, when you could simply do linear regression instead? In fact, one of the defining features of neural networks is their ability to chain an unlimited (in theory) number of layers. Of these, all but the output\index{layer!output} layer may be referred to as "hidden" layers, although from the point of view of someone who uses a deep learning framework such as `torch`, they are not that *hidden* after all.
+
+Let's say we want our network to have one hidden layer\index{layer!hidden}. Its size, meaning, the number of *units* it has, will be an important factor in determining the network's power. This number is reflected in the weight matrix we create: A layer with eight units will need a weight matrix with eight columns.
+
+```{r}
+w1 <- torch_randn(3, 8, requires_grad = TRUE)
+```
+
+Each unit has its own value for bias, too.
+
+```{r}
+b1 <- torch_zeros(1, 8, requires_grad = TRUE)
+```
+
+Just like we saw before, the hidden layer will multiply the input it receives by the weights and add the bias. That is, it applies the function $f$ displayed above. Then, another function is applied. This function receives its input from the hidden layer and produces the final output. In a nutshell, what is happening here is function composition: Calling the second function $g$, the overall transformation is $g(f(\mathbf{X})$, or $g \circ f$.
+
+For $g$ to yield an output analogous to the single-layer architecture above, its weight matrix has to take the eight-column hidden layer to a single column. That is, `w2` looks like this:
+
+```{r}
+w2 <- torch_randn(8, 1, requires_grad = TRUE)
+```
+
+The bias, `b2`, is a single value, like `b1`:
+
+```{r}
+b2 <- torch_randn(1, 1, requires_grad = TRUE)
+```
+
+Of course, there is no reason to stop at *one* hidden layer, and once we've built up the complete apparatus, please feel invited to experiment with the code. But first, we need to add in a few other types of components. For one, with our most recent architecture, what we're doing is chain, or compose, functions -- which is good. But all these functions are doing is add and multiply, implying that they are linear. The power of neural networks, however, is usually associated with *nonlinearity*\index{nonlinearity}. Why?
+
+## Activation functions\index{activation function}
+
+Imagine, for a moment, that we had a network with three layers, and all each layer did was multiply its input by its weight matrix. (Having a bias term doesn't really change anything. But it makes the example more complex, so we're "abstracting it out".)
+
+This gives us a chain of matrix multiplications: $f(\mathbf{X}) = ((\mathbf{X} \mathbf{W}_1)\mathbf{W}_2)\mathbf{W}_3$. Now, this can be rearranged so that all the weight matrices are multiplied together before application to $\mathbf{X}$: $f(\mathbf{X}) = \mathbf{X} (\mathbf{W}_1\mathbf{W}_2\mathbf{W}_3)$. Thus, this three-layer network can be simplified to a single-layer one, where $f(\mathbf{X}) = \mathbf{X} \mathbf{W}_4$. And now, we have lost all advantages associated with deep neural networks.
+
+This is where activation functions, sometimes called "nonlinearities", come in. They introduce non-linear operations that cannot be modeled by matrix multiplication. Historically, the prototypical activation function has been the *sigmoid*\index{activation!sigmoid}, and it's still extremely important today. Its constitutive action is to squish its input between zero and one, yielding a value that can be interpreted as a probability. But in regression, this is not usually what we want, and neither would it be for most hidden layers.
+
+Instead, the most-used activation function inside a network is the so-called *ReLU*\index{activation!ReLU}, or Rectified Linear Unit. This is a long name for something rather straightforward: All negative values are set to zero. In `torch`, this can be accomplished using the `relu()` function:
+
+```{r}
+t <- torch_tensor(c(-2, 1, 5, -7))
+t$relu()
+```
+
+    torch_tensor
+     0
+     1
+     5
+     0
+    [ CPUFloatType{4} ]
+
+Why would this be nonlinear? One criterion for a linear function is that when you have two inputs, it doesn't matter if you first add them and then, apply the transformation, or if you start by applying the transformation independently to both inputs and then, go ahead and add them. But with ReLU, this does not work:
+
+```{r}
+t1 <- torch_tensor(c(1, 2, 3))
+t2 <- torch_tensor(c(1, -2, 3))
+
+t1$add(t2)$relu()
+```
+
+    torch_tensor
+     2
+     0
+     6
+    [ CPUFloatType{3} ]
+
+```{r}
+t1_clamped <- t1$relu()
+t2_clamped <- t2$relu()
+
+t1_clamped$add(t2_clamped)
+```
+
+    torch_tensor
+     2
+     2
+     6
+    [ CPUFloatType{3} ]
+
+The results are not the same.
+
+Wrapping up so far, we've talked about how to code layers and activation functions. There is just one further concept to discuss before we can build the complete network. This is the loss function.
+
+## Loss functions
+
+Put abstractly, the loss is a measure of how far away we are from our goal. When minimizing a function, like we did in the previous chapter, this is the difference between the current function value and the smallest value it can take. With neural networks, we are free to choose a suitable loss function as we like, provided it matches our task. For regression-type tasks, this often will be mean squared error (MSE), although it doesn't have to be. For example, there could be reasons to use mean absolute error instead.
+
+In `torch`, computation of mean squared error is a one-liner:
+
+```{r}
+y <- torch_randn(5)
+y_pred <- y + 0.01
+
+loss <- (y_pred - y)$pow(2)$mean()
+
+loss
+```
+
+    torch_tensor
+    9.99999e-05
+    [ CPUFloatType{} ]
+
+As soon as we have the loss, we'll be able to update the weights, subtracting a fraction of its gradient. We've already seen how to do this in the last chapter, and will see it again shortly.
+
+We now take the pieces discussed and put them together.
+
+## Implementation
+
+We split this into three parts. This way, when later we refactor individual components to make use of higher-level `torch` functionality, it will be easier to see the areas where encapsulation and modularization are occurring.
+
+### Generate random data
+
+Our example data consist of one hundred observations. The input, `x`, has three features; the target, `y`, just one. `y` is generated from `x`, but with some noise added.
+
+```{r}
+library(torch)
+
+# input dimensionality (number of input features)
+d_in <- 3
+# number of observations in training set
+n <- 100
+
+x <- torch_randn(n, d_in)
+coefs <- c(0.2, -1.3, -0.5)
+y <- x$matmul(coefs)$unsqueeze(2) + torch_randn(n, 1)
+
+```
+
+Next, the network.
+
+### Build the network\index{network}
+
+The network has two layers: a hidden layer and the output layer. This means that we need two weight matrices and two bias tensors. For no special reason, the hidden layer here has thirty-two units:
+
+```{r}
+# dimensionality of hidden layer
+d_hidden <- 32
+# output dimensionality (number of predicted features)
+d_out <- 1
+
+# weights connecting input to hidden layer
+w1 <- torch_randn(d_in, d_hidden, requires_grad = TRUE)
+# weights connecting hidden to output layer
+w2 <- torch_randn(d_hidden, d_out, requires_grad = TRUE)
+
+# hidden layer bias
+b1 <- torch_zeros(1, d_hidden, requires_grad = TRUE)
+# output layer bias
+b2 <- torch_zeros(1, d_out, requires_grad = TRUE)
+```
+
+With their current values -- results of random initialization -- those weights and biases won't be of much use. Time to train the network.
+
+### Train the network
+
+Training the network means passing the input through its layers, calculating the loss, and adjusting the parameters\index{parameters} (weights and biases) in a way that predictions improve. These activities we keep repeating until performance seems sufficient (which, in real-life applications, would have to be defined very carefully). Technically, each repeated application of these steps is called an *epoch*\index{epoch}.
+
+Just like with function minimization, deciding on a suitable learning rate (the fraction of the gradient to subtract) needs some experimentation.
+
+Looking at the below training loop, you see that, logically, it consists of four parts:
+
+-   do a forward pass\index{forward pass}, yielding the network's predictions (if you dislike the one-liner, feel free to split it up);
+
+-   compute the loss (this, too, being a one-liner -- we merely added some logging);
+
+-   have *autograd* calculate the gradient of the loss with respect to the parameters; and
+
+-   update the parameters accordingly (again, taking care to wrap the whole action in `with_no_grad()`, and zeroing the `grad` fields on every iteration).
+
+```{r}
+
+learning_rate <- 1e-4
+
+### training loop ----------------------------------------
+
+for (t in 1:200) {
+  
+  ### -------- Forward pass --------
+  
+  y_pred <- x$mm(w1)$add(b1)$relu()$mm(w2)$add(b2)
+  
+  ### -------- Compute loss -------- 
+  loss <- (y_pred - y)$pow(2)$mean()
+  if (t %% 10 == 0)
+    cat("Epoch: ", t, "   Loss: ", loss$item(), "\n")
+  
+  ### -------- Backpropagation --------
+  
+  # compute gradient of loss w.r.t. all tensors with
+  # requires_grad = TRUE
+  loss$backward()
+  
+  ### -------- Update weights -------- 
+  
+  # Wrap in with_no_grad() because this is a part we don't 
+  # want to record for automatic gradient computation
+   with_no_grad({
+     w1 <- w1$sub_(learning_rate * w1$grad)
+     w2 <- w2$sub_(learning_rate * w2$grad)
+     b1 <- b1$sub_(learning_rate * b1$grad)
+     b2 <- b2$sub_(learning_rate * b2$grad)  
+     
+     # Zero gradients after every pass, as they'd
+     # accumulate otherwise
+     w1$grad$zero_()
+     w2$grad$zero_()
+     b1$grad$zero_()
+     b2$grad$zero_()  
+   })
+
+}
+```
+
+    Epoch: 10 Loss: 24.92771
+    Epoch: 20 Loss: 23.56143
+    Epoch: 30 Loss: 22.3069
+    Epoch: 40 Loss: 21.14102
+    Epoch: 50 Loss: 20.05027
+    Epoch: 60 Loss: 19.02925
+    Epoch: 70 Loss: 18.07328
+    Epoch: 80 Loss: 17.16819
+    Epoch: 90 Loss: 16.31367
+    Epoch: 100 Loss: 15.51261
+    Epoch: 110 Loss: 14.76012
+    Epoch: 120 Loss: 14.05348
+    Epoch: 130 Loss: 13.38944
+    Epoch: 140 Loss: 12.77219
+    Epoch: 150 Loss: 12.19302
+    Epoch: 160 Loss: 11.64823
+    Epoch: 170 Loss: 11.13535
+    Epoch: 180 Loss: 10.65219
+    Epoch: 190 Loss: 10.19666
+    Epoch: 200 Loss: 9.766989
+
+The loss decreases quickly at first, and then, not so rapidly anymore. But this example was not created to exhibit magnificent performance; the idea was to show how few lines of code are needed to build a "real" neural network.
+
+Now, the layers, the loss, the parameter updates -- all that is still pretty "raw": It's (literally) *just tensors*. For such a small network this works fine, but it would get cumbersome pretty fast for more complex designs. The following two chapters, thus, will show how to abstract away weights and biases into neural network *modules*, swap self-made loss functions with built-in ones, and get rid of the verbose parameter update routine.

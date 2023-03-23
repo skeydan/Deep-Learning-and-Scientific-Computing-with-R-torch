@@ -1,0 +1,17 @@
+# On `torch`, and how to get it {#sec:basics-torch}
+
+## In `torch` world
+
+`torch` is an R port of PyTorch, one of the two (as of this writing) most-employed deep learning frameworks in industry and research. By its design, it is also an excellent tool to use in various types of scientific computation tasks (a subset of which you'll encounter in the book's final part). It is written entirely in R and C++ (including a bit of C). No Python installation is required to use it.
+
+On the Python (PyTorch) side, the ecosystem appears as a set of concentric cycles. In the middle, there's PyTorch\index{PyTorch} itself, the core library without which nothing could work. Surrounding it, we have the inner circle of what could be called framework libraries, dedicated to special types of data (images, sound, text ...), or centered on workflow tasks, like deployment. Then, there is the broader ecosystem of add-ons, specializations, and libraries for whom PyTorch is a building block, or a tool.
+
+On the R side, we have the same "heart" -- all depends on core `torch` -- and we do have the same types of libraries; but the categories, the "circles", appear less clearly set off from each other. There are no strict boundaries. There's just a vibrant community of developers, of diverse origin and with diverse goals, working to further develop and extend `torch`, so it can help more and more people accomplish their various tasks. The ecosystem growing so quickly, I'll refrain from naming individual packages -- at any time, visit [the `torch` website](https://torch.mlverse.org/packages/) to see a featured subset.
+
+There are three packages, though, that I *will* name here, since they are used in the book: `torchvision` , `torchaudio`, and `luz`. The former two bundle domain-specific transformations, deep learning models, datasets, and utilities for images (incl. video) and audio data, respectively. The third is a high-level, intuitive, nice-to-use interface to `torch`, allowing to define, train, and evaluate a neural network in just a few lines of code. Like `torch` itself, all three packages can be installed from CRAN.
+
+## Installing and running torch
+
+`torch` is available for Windows, MacOS, and Linux. If you have a compatible GPU, and the necessary NVidia software installed, you can benefit from significant speedup, a speedup that will depend on the type of model trained. All examples in this book, though, have been chosen so they can be run on the CPU, without posing taxing demands on your patience.
+
+Due to their often-transient character, I won't elaborate on compatibility issues here, in the book; analogously, I'll refrain from listing concrete installation\index{installation} instructions. At any time, you'll find up-to-date information in the [vignette](https://cran.r-project.org/web/packages/torch/vignettes/installation.html); and you're more than welcome, should you encounter problems or have questions, to open an issue in the `torch` GitHub repository.

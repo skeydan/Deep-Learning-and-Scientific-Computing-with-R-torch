@@ -1,0 +1,9 @@
+# Overview {#sec:other-overview}
+
+By now, we've talked a lot about deep learning. But `torch` is fruitfully employed in other kinds of tasks, as well -- scientific applications, for example, that rely on mathematical methods to discover patterns, relations, and structure.
+
+In this section, we concentrate on three topics. The first is matrix computations -- a subject whose importance is hard to call into question, seeing how *all* computations in scientific computation and machine learning are matrix computations (tensors just being higher-order matrices). Concretely, we'll solve a least-squares problem by means of matrix factorization, making use of functions like `linalg_cholesky()`, `linalg_qr()`, and `linalg_svd()`. In addition, we'll take a short look at how convolution (in its original, signal-processing sense) can be implemented efficiently.
+
+Next, we move on to a famous mathematical method we've already made (indirect, but highly beneficial) use of: the Discrete Fourier Transform (DFT). This time, though, we don't just *use* it; instead, we aim to understand *why* and *how* it works. Once we have that understanding, a straightforward implementation is a matter of just a few lines of code. A second chapter is then dedicated to implementing the DFT efficiently, by means of the Fast Fourier Transform (FFT). Again, we start by analyzing its workings, and go on to code it from scratch. You'll see one of the hand-coded methods coming surprisingly close, in performance, to `torch`'s own `torch_fft_fft()`.
+
+Finally, we explore an idea that is far more recent than Fourier methods; namely, the Wavelet Transform. This transform is widely used in data analysis, and we'll understand clearly why that's the case. In `torch`, there is no dedicated method to compute the Wavelet Transform; but we'll see how repeated use of `torch_fft_fft()` results in an efficient implementation.

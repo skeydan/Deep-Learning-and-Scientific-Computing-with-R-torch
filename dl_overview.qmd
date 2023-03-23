@@ -1,0 +1,16 @@
+# Overview {#sec:dl-overview}
+
+This part of the book is completely dedicated to applications of deep learning. There will be two categories of things to dive into: topics workflow-related, and topics related to domain adaptation.
+
+Regarding workflow, we'll see how to:
+
+-   prepare the input data in a form the model can work with;
+-   effectively and efficiently train a model, monitoring progress and adjusting hyper-parameters on the fly;
+-   save and load models;
+-   making models generalize beyond the training data;
+-   speed up training;
+-   and more.
+
+Secondly -- beyond an efficient workflow -- the task in question matters. Compositions of linear layers, of the type we used to learn `torch` in the first part, will not suffice when our goal is to model images or time series. Successful use of deep learning means tailoring model architecture to the domain in question. To that end, we start from concrete tasks, and present applicable architectures directly by example.
+
+Concretely, the plan is the following. The upcoming two chapters will introduce you to workflow-related techniques that are indispensable in practice. You'll encounter another package, `luz`, that endows `torch` with an important layer of abstraction, and significantly streamlines the workflow. Once you know how to use it, we're all set to look at a first application: image classification. To improve on our initial results, we then back up and explore two more advanced workflow-related topics: how to improve generalization, and how to speed up training. Equipped with that knowledge, we first return to images, before extending our domain-related skills to tabular data, time series, and audio.

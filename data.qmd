@@ -1,0 +1,223 @@
+# Loading data {#sec:data}
+
+Our toy example, which we'll see a third (and last) version of in the next chapter, had the model train on a tiny set of data -- small enough to pass all observations to the model in one go. What if that wasn't the case? Say we had 10,000 items instead, and every item was an RGB image of size 256 x 256 pixels. Even on very powerful hardware, we could not possibly train a model on the complete data all at once.
+
+For that reason, deep-learning frameworks like `torch` include an input pipeline that lets you pass data to the model in *batches* -- that is, subsets of observations. Involved in this process are two classes: `dataset()` and `dataloader()`. Before we look at how to construct instances of these, let's characterize them by what they're *for*.
+
+## Data vs. `dataset()`\index{\texttt{dataset()}} vs. `dataloader()`\index{\texttt{dataloader()}} -- what's the difference?
+
+In this book, "dataset" (variable-width font, no parentheses), or just "the data", usually refers to things like R matrices, `data.frame`s, and what's contained therein. A `dataset()` (fixed-width font, parentheses), however, is a `torch` object that knows how to do one thing: *deliver to the caller a* *single item.* That item, usually, will be a list, consisting of one input and one target tensor. (It could be anything, though -- whatever makes sense for the task. For example, it could be a single tensor, if input and target are the same. Or more than two tensors, in case different inputs should be passed to different modules.)
+
+As long as it fulfills the above-stated contract, a `dataset()` is free to do whatever needs to be done. It could, for example, download data from the internet, store them in some temporary location, do some pre-processing, and when asked, return bite-sized chunks of data in just the shape expected by a certain class of models. No matter what it does in the background, all its caller cares about is that it return a single item. Its caller, that's the `dataloader()`.
+
+A `dataloader()`'s role is to feed input to the model in *batches*. One immediate reason is computer memory: Most `dataset()`s will be far too large to pass them to the model in one go. But there are additional benefits to batching. Since gradients are computed (and model weights updated) once per *batch*, there is an inherent stochasticity to the process, a stochasticity that helps with model training. We'll talk more about that in an upcoming chapter.
+
+## Using `dataset()`s
+
+`dataset()`s come in all flavors, from ready-to-use -- and brought to you by some package, `torchvision` or `torchdatasets`, say, or any package that chooses to provide access to data in `torch`-ready form -- to fully customized (made by you, that is). Creating `dataset()`s is straightforward, since they are R6 objects, and there's just three methods to be implemented. These methods are:
+
+1.  `initialize(...)`. Parameters to `initialize()` are passed when a `dataset()` is instantiated. Possibilities include, but are not limited to, references to R `data.frame`s, filesystem paths, download URLs, and any configurations and parameterizations expected by the `dataset()`.
+2.  `.getitem(i)`. This is the method responsible for fulfilling the contract. Whatever it returns counts as a single item. The parameter, `i`, is an index that, in many cases, will be used to determine the starting position in the underlying data structure (a `data.frame` of file system paths, for example). However, the `dataset()` is not *obliged* to actually make use of that parameter. With extremely huge `dataset()`s, for example, or given serious class imbalance, it could instead decide to return items based on *sampling*.
+3.  `.length()`. This, usually, is a one-liner, its only purpose being to inform about the number of available items in a `dataset()`.
+
+Here is a blueprint for creating a `dataset()`:
+
+```{r}
+ds <- dataset()(
+  initialize = function(...) {
+    ...
+  },
+  .getitem = function(index) {
+    ...
+  },
+  .length = function() {
+    ...
+  }
+)
+```
+
+That said, let's compare three ways of obtaining a `dataset()` to work with, from tailor-made to maximally effortless.
+
+### A self-built `dataset()`
+
+Let's say we wanted to build a classifier based on the popular `iris` alternative, `palmerpenguins`.
+
+```{r}
+library(torch)
+library(palmerpenguins)
+library(dplyr)
+
+penguins %>% glimpse()
+```
+
+    $ species           <fct> Adelie, Adelie, Adelie, Adelie,...
+    $ island            <fct> Torgersen, Torgersen, Torgersen,...
+    $ bill_length_mm    <dbl> 39.1, 39.5, 40.3, NA, 36.7, 39.3,...
+    $ bill_depth_mm     <dbl> 18.7, 17.4, 18.0, NA, 19.3, 20.6,...
+    $ flipper_length_mm <int> 181, 186, 195, NA, 193, 190, 181,...
+    $ body_mass_g       <int> 3750, 3800, 3250, NA, 3450, 3650,...
+    $ sex               <fct> male, female, female, NA, female,...
+    $ year              <int> 2007, 2007, 2007, 2007, 2007,...
+
+In predicting `species`, we want to make use of just a subset of columns: `bill_length_mm`, `bill_depth_mm`, `flipper_length_mm`, and `body_mass_g`. We build a `dataset()` that returns exactly what is needed:
+
+```{r}
+penguins_dataset <- dataset(
+  name = "penguins_dataset()",
+  initialize = function(df) {
+    df <- na.omit(df)
+    self$x <- as.matrix(df[, 3:6]) %>% torch_tensor()
+    self$y <- torch_tensor(
+      as.numeric(df$species)
+    )$to(torch_long())
+  },
+  .getitem = function(i) {
+    list(x = self$x[i, ], y = self$y[i])
+  },
+  .length = function() {
+    dim(self$x)[1]
+  }
+)
+```
+
+Once we've instantiated a `penguins_dataset()`, we should immediately perform some checks. First, does it have the expected length?
+
+```{r}
+ds <- penguins_dataset(penguins)
+length(ds)
+```
+
+    [1] 333
+
+And second, do individual elements have the expected shape and data type? Conveniently, we can access `dataset()` items like tensor values, through indexing:
+
+```{r}
+ds[1]
+
+```
+
+    $x
+    torch_tensor
+       39.1000
+       18.7000
+      181.0000
+     3750.0000
+    [ CPUFloatType{4} ]
+
+    $y
+    torch_tensor
+    1
+    [ CPULongType{} ]
+
+This also works for items "further down" in the `dataset()` -- it has to: When indexing into a `dataset()`, what happens in the background is a call to `.getitem(i)`, passing along the desired position `i`.
+
+Truth be told, in this case we didn't really have to build our own `dataset()`. With so little pre-processing to be done, there is an alternative: `tensor_dataset()`.
+
+### `tensor_dataset()`
+
+When you already have a tensor around, or something that's readily converted to one, you can make use of a built-in `dataset()` generator: `tensor_dataset()`. This function can be passed any number of tensors; each batch item then is a list of tensor values:
+
+```{r}
+three <- tensor_dataset(
+  torch_randn(10), torch_randn(10), torch_randn(10)
+)
+three[1]
+```
+
+    [[1]]
+    torch_tensor
+    0.522735
+    [ CPUFloatType{} ]
+
+    [[2]]
+    torch_tensor
+    -0.976477
+    [ CPUFloatType{} ]
+
+    [[3]]
+    torch_tensor
+    -1.14685
+    [ CPUFloatType{} ]
+
+In our `penguins` scenario, we end up with two lines of code:
+
+```{r}
+penguins <- na.omit(penguins)
+ds <- tensor_dataset(
+  torch_tensor(as.matrix(penguins[, 3:6])),
+  torch_tensor(
+    as.numeric(penguins$species)
+  )$to(torch_long())
+)
+
+ds[1]
+```
+
+Admittedly though, we have not made use of all the dataset's columns. The more pre-processing you need a `dataset()` to do, the more likely you are to want to code your own.
+
+Thirdly and finally, here is the most effortless possible way.
+
+### `torchvision::mnist_dataset()`
+
+When you're working with packages in the `torch` ecosystem, chances are that they already include some `dataset()`s, be it for demonstration purposes or for the sake of the data themselves. `torchvision`, for example, packages a number of classic image datasets -- among those, that archetype of archetypes, MNIST.
+
+Since we're going to talk about image processing in a later chapter, I won't comment on the arguments to `mnist_dataset()` here; we do, however, include a quick check that the data delivered conform to what we'd expect:
+
+```{r}
+library(torchvision)
+
+dir <- "~/.torch-datasets"
+
+ds <- mnist_dataset(
+  root = dir,
+  train = TRUE, # default
+  download = TRUE,
+  transform = function(x) {
+    x %>% transform_to_tensor() 
+  }
+)
+
+first <- ds[1]
+cat("Image shape: ", first$x$shape, " Label: ", first$y, "\n")
+```
+
+    Image shape:  1 28 28  Label:  6 
+
+At this point, that is all we need to know about `dataset()`s -- we'll encounter plenty of them in the course of this book. Now, we move on from the one to the many.
+
+## Using `dataloader()`s
+
+Continuing to work with the newly created MNIST `dataset()`, we instantiate a `dataloader()` for it. The `dataloader()` will deliver pairs of images and labels in batches: thirty-two at a time. In every epoch, it will return them in different order (`shuffle = TRUE`):
+
+```{r}
+dl <- dataloader(ds, batch_size = 32, shuffle = TRUE)
+```
+
+Just like `dataset()`s, `dataloader()`s can be queried about their length:
+
+```{r}
+length(dl)
+```
+
+    [1] 1875
+
+This time, though, the returned value is not the number of items; it is the number of batches.
+
+To loop over batches, we first obtain an iterator, an object that knows how to traverse the elements in this `dataloader()`. Calling `dataloader_next()`, we can then access successive batches, one by one:
+
+```{r}
+first_batch <- dl %>%
+  # obtain an iterator for this dataloader
+  dataloader_make_iter() %>% 
+  dataloader_next()
+
+dim(first_batch$x)
+dim(first_batch$y)
+```
+
+    [1] 32  1 28 28
+    [1] 32
+
+If you compare the batch shape of `x` -- the image part -- with the shape of an individual image (as inspected above), you see that now, there is an additional dimension in front, reflecting the number of images in a batch.
+
+The next step is passing the batches to a model. This -- in fact, this as well as the complete, end-to-end deep-learning workflow -- is what the next chapter is about.

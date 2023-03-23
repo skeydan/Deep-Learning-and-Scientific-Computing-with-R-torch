@@ -1,0 +1,221 @@
+# Modules {#sec:modules}
+
+In the last chapter, we built a neural network for a regression task. There were two distinct types of operations: linear and non-linear.
+
+In the non-linear category, we had ReLU activation, expressed as a straightforward function call: `nnf_relu()`. Activation functions are *functions*: Given input $\mathbf{x}$, they return output $\mathbf{y}$ every time. In other words, they are deterministic. It's different with the linear part, though.
+
+The linear part in the regression network was implemented as multiplication by a matrix -- the weight matrix -- and addition of a vector (the bias vector). With operations like that, results inevitably depend on the actual values stored in the respective tensors. Put differently, the operation is *stateful*.
+
+Whenever there is state involved, it helps to encapsulate it in an object, freeing the user from manual management. This is what `torch`'s *modules* do.
+
+Note that term, *modules*\index{module (terminology)}. In `torch`, a module can be of any complexity, ranging from basic *layers* -- like the `nn_linear()` we are going to introduce in a minute -- to complete *models* consisting of many such layers. Code-wise, there is no difference between "layers"\index{layer (terminology)} and "models"\index{model (terminology)}. This is why in some texts, you'll see "module" used throughout. In this book, I'll mostly stay with the common terminology of layers and models, as it maps more closely to how things appear conceptually.
+
+Back to the *why* of modules. In addition to encapsulation, there is another reason for providing layer objects: Not all often-used layers are as light-weight as `nn_linear()` is. We'll quickly mention a few others at the end of the next section, reserving a complete introduction to later chapters of this book.
+
+## Built-in `nn_module()`s
+
+In `torch`, a linear layer is created using `nn_linear()`. `nn_linear()` expects (at least) two arguments: `in_features` and `out_features`. Let's say your input data has fifty observations with five features each; that is, it is of size 50 x 5. You want to build a hidden layer with sixteen units. Then `in_features` is 5, and `out_features` is 16. (The same 5 and 16 would constitute the number of rows/columns in the weight matrix if you built one yourself.)
+
+```{r}
+library(torch)
+l <- nn_linear(in_features = 5, out_features = 16)
+```
+
+Once created, the module readily informs you about its parameters:
+
+```{r}
+l
+```
+
+    An `nn_module` containing 96 parameters.
+    Parameters
+     weight: Float [1:16, 1:5]
+     bias: Float [1:16]
+
+Encapsulation doesn't keep us from inspecting the weight and bias tensors:
+
+```{r}
+l$weight
+```
+
+    torch_tensor
+    -0.2079 -0.1920  0.2926  0.0036 -0.0897
+     0.3658  0.0076 -0.0671  0.3981 -0.4215
+     0.2568  0.3648 -0.0374 -0.2778 -0.1662
+     0.4444  0.3851 -0.1225  0.1678 -0.3443
+    -0.3998  0.0207 -0.0767  0.4323  0.1653
+     0.3997  0.0647 -0.2823 -0.1639 -0.0225
+     0.0479  0.0207 -0.3426 -0.1567  0.2830
+     0.0925 -0.4324  0.0448 -0.0039  0.1531
+    -0.2924 -0.0009 -0.1841  0.2028  0.1586
+    -0.3064 -0.4006 -0.0553 -0.0067  0.2575
+    -0.0472  0.1238 -0.3583  0.4426 -0.0269
+    -0.0275 -0.0295 -0.2687  0.2236  0.3787
+    -0.2617 -0.2221  0.1503 -0.0627  0.1094
+     0.0122  0.2041  0.4466  0.4112  0.4168
+    -0.4362 -0.3390  0.3679 -0.3045  0.1358
+     0.2979  0.0023  0.0695 -0.1906 -0.1526
+    [ CPUFloatType{16,5} ]
+
+```{r}
+l$bias
+```
+
+    torch_tensor
+    -0.2314
+     0.2942
+     0.0567
+    -0.1728
+    -0.3220
+    -0.1553
+    -0.4149
+    -0.2103
+    -0.1769
+     0.4219
+    -0.3368
+     0.0689
+     0.3625
+    -0.1391
+    -0.1411
+    -0.2014
+    [ CPUFloatType{16} ]
+
+At this point, I need to ask for your indulgence. You've probably noticed that `torch` reports the weight matrix as being of size 16 x 5, not 5 x 16, like we said you'd create it when coding from scratch. This is due to an implementation detail inherited from the underlying C++ implementation, `libtorch`. For performance reasons, `libtorch`'s linear module stores the weight and bias tensors in *transposed* form. On the R side, all we can do is explicitly point you to it and thereby, hopefully, alleviate the confusion.
+
+Let's go on. To apply this module to input data, just "call" it like a function:
+
+```{r}
+x <- torch_randn(50, 5)
+output <- l(x)
+output$size()
+```
+
+    [1] 50 16
+
+So that's the forward pass. How about gradient computation? Previously, when creating a tensor we wanted to figure as a "source" in gradient computation, we had to let `torch` know explicitly, passing `requires_grad = TRUE`. No such thing is required for built-in `nn_module()`s. We can immediately check that `output` knows what to do on `backward()`:
+
+```{r}
+output$grad_fn
+```
+
+    AddmmBackward0
+
+To be sure though, let's calculate some "dummy" loss based on `output`, and call `backward()`. We see that now, the linear module's `weight` tensor has its `grad` field populated:
+
+```{r}
+loss <- output$mean()
+loss$backward()
+l$weight$grad
+```
+
+    torch_tensor
+    0.01 *
+    -0.3064  2.4118 -0.6095  0.3419 -1.6131
+     -0.3064  2.4118 -0.6095  0.3419 -1.6131
+     -0.3064  2.4118 -0.6095  0.3419 -1.6131
+     -0.3064  2.4118 -0.6095  0.3419 -1.6131
+     -0.3064  2.4118 -0.6095  0.3419 -1.6131
+     -0.3064  2.4118 -0.6095  0.3419 -1.6131
+     -0.3064  2.4118 -0.6095  0.3419 -1.6131
+     -0.3064  2.4118 -0.6095  0.3419 -1.6131
+     -0.3064  2.4118 -0.6095  0.3419 -1.6131
+     -0.3064  2.4118 -0.6095  0.3419 -1.6131
+     -0.3064  2.4118 -0.6095  0.3419 -1.6131
+     -0.3064  2.4118 -0.6095  0.3419 -1.6131
+     -0.3064  2.4118 -0.6095  0.3419 -1.6131
+     -0.3064  2.4118 -0.6095  0.3419 -1.6131
+     -0.3064  2.4118 -0.6095  0.3419 -1.6131
+     -0.3064  2.4118 -0.6095  0.3419 -1.6131
+    [ CPUFloatType{16,5} ]
+
+Thus, once you work with `nn_module`s, `torch` automatically assumes that you'll want gradients computed.
+
+`nn_linear()`, straightforward though it may be, is an essential building block encountered in most every model architecture. Others include:
+
+-   `nn_conv1d()`, `nn_conv2d(), and nn_conv3d()`, the so-called *convolutional* layers that apply filters to input data of varying dimensionality,
+
+-   `nn_lstm()` and `nn_gru()` , the *recurrent* layers that carry through a state,
+
+-   `nn_embedding()` that is used to embed categorical data in high-dimensional space,
+
+-   and more.
+
+## Building up a model
+
+The built-in `nn_module()`s give us *layers*, in usual speak. How do we combine those into *models*? Using the "factory function" `nn_module()`, we can define models of arbitrary complexity. But we may not always need to go that way.
+
+### Models as sequences of layers: `nn_sequential()`index{`nn_sequential()`}
+
+If all our model should do is propagate straight through the layers, we can use `nn_sequential()` to build it. Models consisting of all linear layers are known as *Multi-Layer Perceptrons*index{Multi-Layer Perceptron (MLP)} (MLPs). Here is one:
+
+```{r}
+mlp <- nn_sequential(
+  nn_linear(10, 32),
+  nn_relu(),
+  nn_linear(32, 64),
+  nn_relu(),
+  nn_linear(64, 1)
+)
+```
+
+Take a close look at the layers involved. We've already seen `nnf_relu()`, the *function* that implements ReLU activation. (The `f` in `nnf_` stands for functional.) Below, `nn_relu`, like `nn_linear()`, is a module, that is, an object. This is because `nn_sequential()` expects all its arguments to be modules.
+
+Just like the built-in modules, you can apply this model to data by just *calling* it:
+
+```{r}
+mlp(torch_randn(5, 10))
+```
+
+    torch_tensor
+    0.01 *
+    -7.8097
+     -9.0363
+     -38.3282
+      5.3959
+     -16.4837
+    [ CPUFloatType{5,1} ][ grad_fn = <AddmmBackward0> ]
+
+The single call triggered a complete forward pass through the network. Analogously, calling `backward()` will back-propagate\index{backpropagation} through all the layers.
+
+What if you need the model to chain execution steps in a non-sequential way?
+
+### Models with custom logic
+
+As already hinted at, this is where you use `nn_module()`.
+
+`nn_module()` creates constructors for custom-made R6 objects. Below, `my_linear()` is such a constructor. When called, it will return a linear module similar to the built-in `nn_linear()`.
+
+Two methods should be implemented in defining a constructor: `initialize()` and `forward()`. `initialize()` creates the module object's fields, that is, the objects or values it "owns" and can access from inside any of its methods. `forward()` defines what should happen when the module is called on the input:
+
+```{r}
+my_linear <- nn_module(
+  initialize = function(in_features, out_features) {
+    self$w <- nn_parameter(torch_randn(
+      in_features, out_features
+    ))
+    self$b <- nn_parameter(torch_zeros(out_features))
+  },
+  forward = function(input) {
+    input$mm(self$w) + self$b
+  }
+)
+```
+
+Note the use of `nn_parameter()`. `nn_parameter()` makes sure that the passed-in tensor is registered as a module *parameter*, and thus, is subject to backpropagation by default.
+
+To instantiate the newly-defined module, call its constructor:
+
+```{r}
+l <- my_linear(7, 1)
+l
+```
+
+    An `nn_module` containing 8 parameters.
+
+    Parameters ────────────────────────────────────────────────────────────────────────────────────────────
+    ● w: Float [1:7, 1:1]
+    ● b: Float [1:1]
+
+Granted, in this example, there really is no *custom logic* we needed to define our own module for. But here, you have a template applicable to any use case. Later, we'll see definitions of `initialize()` and `forward()` that are more complex, and we'll encounter additional methods defined on modules. But the basic mechanism will remain the same.
+
+At this point, you may feel like you'd like to rewrite last chapter's neural network using modules. Feel free to do so! Or maybe wait until, in the next chapter, we'll have learned about *optimizer*s, and built-in loss functions. Once we're done, we'll return to our two examples, function minimization and the regression network. Then, we'll be removing all do-it-yourself pieces rendered superfluous by `torch`.

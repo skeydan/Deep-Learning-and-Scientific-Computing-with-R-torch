@@ -1,0 +1,73 @@
+project:
+  type: book
+  output-dir: docs
+book:
+  title: "Deep Learning and Scientific Computing with R torch"
+  author: "Sigrid Keydana"
+  date: April, 2023
+  chapters:
+    - index.qmd
+    - part: "Getting familiar with torch"
+      chapters:
+        - basics_overview.qmd
+        - what_is_torch.qmd
+        - tensors.qmd
+        - autograd.qmd
+        - optim_1.qmd
+        - network_1.qmd
+        - modules.qmd
+        - optimizers.qmd
+        - loss_functions.qmd
+        - optim_2.qmd
+        - network_2.qmd
+    - part: "Deep learning with torch"
+      chapters:
+         - dl_overview.qmd
+         - data.qmd
+         - training_with_luz.qmd
+         - image_classification_1.qmd
+         - overfitting.qmd
+         - training_efficiency.qmd
+         - image_classification_2.qmd
+         - image_segmentation.qmd
+         - tabular_data.qmd
+         - time_series.qmd
+         - audio_classification.qmd
+    - part: "Other things to do with torch: Matrices, Fourier Transform, and Wavelets"
+      chapters:
+         - other_overview.qmd
+         - matrix_computations_leastsquares.qmd
+         - matrix_computations_convolution.qmd
+         - fourier_transform_dft.qmd
+         - fourier_transform_fft.qmd
+         - wavelets.qmd
+    - references.qmd
+bibliography: references.bib
+format:
+  html:
+    theme: minty
+  pdf:
+    keep-tex: true
+    documentclass: krantz
+    toc-title: "Contents"
+    lof: true
+    fig-pos: "H"
+    highlight-style: none
+    colorlinks: false
+    links-as-notes: true
+    include-in-header: 
+      text: |
+        \usepackage{makeidx}
+        \makeindex
+    include-after-body: 
+      text: |
+        \printindex
+execute:
+  eval: false
+crossref:
+  fig-prefix: fig.
+  tbl-prefix: tbl.
+  
+
+
+

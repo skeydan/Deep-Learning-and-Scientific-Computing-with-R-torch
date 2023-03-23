@@ -1,0 +1,53 @@
+\documentclass [border = .2cm] {standalone}
+
+% Required packages
+\usepackage{pgfplots}
+\pgfplotsset{compat = newest}
+\usepackage{tikz-3dplot}
+\usetikzlibrary {backgrounds}
+
+\begin{document}
+
+\tdplotsetmaincoords{80}{40}
+\begin{tikzpicture}
+	[
+	background rectangle/.style={bottom color=white!70!gray!},
+	show background rectangle,
+	tdplot_main_coords,
+	grid/.style={very thin,gray},
+	axis/.style={->,black,thin},
+	cube/.style={opacity=.3,thick,fill=gray}]
+	\foreach \x in {0,1,...,6}
+	\foreach \y in {0,1,...,6}
+	{
+		\draw[grid] (\x,0) -- (\x,6);
+		\draw[grid] (0,\y) -- (6,\y);
+	}			
+	
+	%draw the axes
+	\draw[axis] (0,0,0) -- (6,0,0) node[anchor=west]{$x$};
+	\draw[axis] (0,0,0) -- (0,6,0) node[anchor=west]{$y$};
+	\draw[axis] (0,0,0) -- (0,0,4) node[anchor=west]{$z$};
+	
+	%draw the bottom of the cube
+	\draw[cube] (0,0,0) -- (0,3,0) -- (4,3,0) -- (4,0,0) -- cycle;
+	
+	%draw the back-right of the cube
+	\draw[cube] (0,0,0) -- (0,3,0) -- (0,3,2) -- (0,0,2) -- cycle;
+	
+	%draw the back-left of the cube
+	\draw[cube] (0,0,0) -- (4,0,0) -- (4,0,2) -- (0,0,2) -- cycle;
+	
+	
+	%draw the front-right of the cube
+	\draw[cube] (4,0,0) -- (4,3,0) -- (4,3,2) -- (4,0,2) -- cycle;
+	
+	%draw the front-left of the cube
+	\draw[cube] (0,3,0) -- (4,3,0) -- (4,3,2) -- (0,3,2) -- cycle;
+	
+	%draw the top of the cube
+	\draw[cube] (0,0,2) -- (0,3,2) -- (4,3,2) -- (4,0,2) -- cycle;
+	
+\end{tikzpicture}
+
+\end{document}

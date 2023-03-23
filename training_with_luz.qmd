@@ -1,0 +1,539 @@
+# Training with luz {#sec:luz}
+
+At this point in the book, you know how to train a neural network. Truth be told, though, there's some cognitive effort involved in having to remember the right execution order of steps like `optimizer$zero_grad()`, `loss$backward()`, and `optimizer$step()`. Also, in more complex scenarios than our running example, the list of things to actively remember gets longer.
+
+One thing we haven't talked about yet, for example, is how to handle the usual three stages of machine learning: training, validation, and testing. Another is the question of data flow between *devices* (CPU and GPU, if you have one). Both topics necessitate additional code to be introduced to the training loop. Writing this code can be tedious, and creates a potential for mistakes.
+
+You can see exactly what I'm referring to in the appendix at the end of this chapter. But now, I want to focus on the remedy: a high-level, easy-to-use, concise way of organizing and instrumenting the training process, contributed by a package built on top of `torch`: `luz`.
+
+## Que haya luz - Que haja luz - Let there be light
+
+A *torch* already brings some light, but sometimes in life, there is no *too bright*. `luz` was designed to make deep learning with `torch` as effortless as possible, while at the same time allowing for easy customization. In this chapter, we focus on the overall process; examples of customization will appear in later chapters.
+
+For ease of comparison, we take our running example, and add a third version, now using `luz`. First, we "just" directly port the example; then, we adapt it to a more realistic scenario. In that scenario, we
+
+-   make use of separate training, validation, and test sets;
+
+-   have `luz` compute *metrics* during training/validation;
+
+-   illustrate the use of *callbacks* to perform custom actions or dynamically change hyper-parameters during training; and
+
+-   explain what is going on with the aforementioned *devices*.
+
+## Porting the toy example
+
+### Data
+
+`luz` does not just substantially transform the code required to train a neural network; it also adds flexibility on the data side of things. In addition to a reference to a `dataloader()`, its `fit()` method accepts `dataset()`s, tensors, and even R objects, as we'll be able to verify soon.
+
+We start by generating an R matrix and a vector, as before. This time though, we also wrap them in a `tensor_dataset()`, and instantiate a `dataloader()`. Instead of just 100, we now generate 1000 observations.
+
+```{r}
+library(torch)
+library(luz)
+
+# input dimensionality (number of input features)
+d_in <- 3
+# number of observations in training set
+n <- 1000
+
+x <- torch_randn(n, d_in)
+coefs <- c(0.2, -1.3, -0.5)
+y <- x$matmul(coefs)$unsqueeze(2) + torch_randn(n, 1)
+
+ds <- tensor_dataset(x, y)
+
+dl <- dataloader(ds, batch_size = 100, shuffle = TRUE)
+```
+
+### Model
+
+To use `luz`, no changes are needed to the model definition. Note, though, that we just *define* the model architecture; we never actually *instantiate* a model object ourselves.
+
+```{r}
+# dimensionality of hidden layer
+d_hidden <- 32
+# output dimensionality (number of predicted features)
+d_out <- 1
+
+net <- nn_module(
+  initialize = function(d_in, d_hidden, d_out) {
+    self$net <- nn_sequential(
+      nn_linear(d_in, d_hidden),
+      nn_relu(),
+      nn_linear(d_hidden, d_out)
+    )
+  },
+  forward = function(x) {
+    self$net(x)
+  }
+)
+```
+
+### Training
+
+To train the model, we don't write loops anymore. `luz` replaces the familiar *iterative* style by a *declarative* one: You tell `luz` what you want to happen, and like a docile sorcerer's apprentice, it sets in motion the machinery.
+
+Concretely, instruction happens in two -- required -- calls.
+
+1.  In `setup()`\index{\texttt{setup()} (luz)}, you specify the loss function and the optimizer to use.
+2.  In `fit()`\index{\texttt{fit()} (luz)}, you pass reference(s) to the training (and optionally, validation) data, as well as the number of epochs to train for.
+
+If the model is configurable -- meaning, it accepts arguments to `initialize()` -- a third method comes into play: `set_hparams()`\index{\texttt{set{\textunderscore}hparams()} (luz)}, to be called in-between the other two. (That's `hparams` for hyper-parameters.) Using this mechanism, you can easily experiment with, for example, different layer sizes, or other factors suspected to affect performance.
+
+```{r}
+fitted <- net %>%
+  setup(loss = nn_mse_loss(), optimizer = optim_adam) %>%
+  set_hparams(
+    d_in = d_in,
+    d_hidden = d_hidden, d_out = d_out
+  ) %>%
+  fit(dl, epochs = 200)
+```
+
+Running this code, you should see output approximately like this:
+
+    Epoch 1/200
+    Train metrics: Loss: 3.0343                                                                               
+    Epoch 2/200
+    Train metrics: Loss: 2.5387                                                                               
+    Epoch 3/200
+    Train metrics: Loss: 2.2758                                                                               
+    ...
+    ...
+    Epoch 198/200
+    Train metrics: Loss: 0.891                                                                                
+    Epoch 199/200
+    Train metrics: Loss: 0.8879                                                                               
+    Epoch 200/200
+    Train metrics: Loss: 0.9036 
+
+Above, what we passed to `fit()` was the `dataloader()`. Let's check that referencing the `dataset()` would have been just as fine:
+
+```{r}
+fitted <- net %>%
+  setup(loss = nn_mse_loss(), optimizer = optim_adam) %>%
+  set_hparams(
+    d_in = d_in,
+    d_hidden = d_hidden, d_out = d_out
+  ) %>%
+  fit(ds, epochs = 200)
+```
+
+Or even, `torch` tensors:
+
+```{r}
+fitted <- net %>%
+  setup(loss = nn_mse_loss(), optimizer = optim_adam) %>%
+  set_hparams(
+    d_in = d_in,
+    d_hidden = d_hidden, d_out = d_out
+  ) %>%
+  fit(list(x, y), epochs = 200)
+```
+
+And finally, R objects, which can be convenient when we aren't already working with tensors.
+
+```{r}
+fitted <- net %>%
+  setup(loss = nn_mse_loss(), optimizer = optim_adam) %>%
+  set_hparams(
+    d_in = d_in,
+    d_hidden = d_hidden, d_out = d_out
+  ) %>%
+  fit(list(as.matrix(x), as.matrix(y)), epochs = 200)
+```
+
+In the following sections, we'll always be working with `dataloader()`s; but in some cases those "shortcuts" may come in handy.
+
+Next, we extend the toy example, illustrating how to address more complex requirements.
+
+## A more realistic scenario
+
+### Integrating training, validation, and test
+
+In deep learning, training and validation phases are interleaved. Every epoch of training is followed by an epoch of validation. Importantly, the data used in both phases have to be strictly disjoint.
+
+In each training phase, gradients are computed and weights are changed; during validation, none of that happens. Why have a validation set, then? If, for each epoch, we compute task-relevant metrics for both partitions, we can see if we are *overfitting* to the training data: that is, drawing conclusions based on training sample specifics not descriptive of the overall population we want to model. All we have to do is two things: instruct `luz` to compute a suitable metric, and pass it an additional `dataloader` pointing to the validation data.
+
+The former is done in `setup()`, and for a regression task, common choices are mean squared or mean absolute error (MSE or MAE, resp.). As we're already using MSE as our loss, let's choose MAE for a metric:
+
+```{r}
+fitted <- net %>%
+  setup(
+    loss = nn_mse_loss(),
+    optimizer = optim_adam,
+    metrics = list(luz_metric_mae())
+  ) %>%
+  fit(...)
+```
+
+The validation `dataloader` is passed in `fit()` -- but to be able to reference it, we need to construct it first! So now (anticipating we'll want to have a test set, too), we split up the original 1000 observations into three partitions, creating a `dataset` and a `dataloader` for each of them.
+
+```{r}
+train_ids <- sample(1:length(ds), size = 0.6 * length(ds))
+valid_ids <- sample(
+  setdiff(1:length(ds), train_ids),
+  size = 0.2 * length(ds)
+)
+test_ids <- setdiff(
+  1:length(ds),
+  union(train_ids, valid_ids)
+)
+
+train_ds <- dataset_subset(ds, indices = train_ids)
+valid_ds <- dataset_subset(ds, indices = valid_ids)
+test_ds <- dataset_subset(ds, indices = test_ids)
+
+train_dl <- dataloader(train_ds,
+  batch_size = 100, shuffle = TRUE
+)
+valid_dl <- dataloader(valid_ds, batch_size = 100)
+test_dl <- dataloader(test_ds, batch_size = 100)
+```
+
+Now, we are ready to start the enhanced workflow:
+
+```{r}
+fitted <- net %>%
+  setup(
+    loss = nn_mse_loss(),
+    optimizer = optim_adam,
+    metrics = list(luz_metric_mae())
+  ) %>%
+  set_hparams(
+    d_in = d_in,
+    d_hidden = d_hidden, d_out = d_out
+  ) %>%
+  fit(train_dl, epochs = 200, valid_data = valid_dl)
+```
+
+    Epoch 1/200
+    Train metrics: Loss: 2.5863 - MAE: 1.2832                                       
+    Valid metrics: Loss: 2.487 - MAE: 1.2365
+    Epoch 2/200
+    Train metrics: Loss: 2.4943 - MAE: 1.26                                          
+    Valid metrics: Loss: 2.4049 - MAE: 1.2161
+    Epoch 3/200
+    Train metrics: Loss: 2.4036 - MAE: 1.236                                         
+    Valid metrics: Loss: 2.3261 - MAE: 1.1962
+    ...
+    ...
+    Epoch 198/200
+    Train metrics: Loss: 0.8947 - MAE: 0.7504
+    Valid metrics: Loss: 1.0572 - MAE: 0.8287
+    Epoch 199/200
+    Train metrics: Loss: 0.8948 - MAE: 0.7503
+    Valid metrics: Loss: 1.0569 - MAE: 0.8286
+    Epoch 200/200
+    Train metrics: Loss: 0.8944 - MAE: 0.75
+    Valid metrics: Loss: 1.0579 - MAE: 0.8292
+
+Even though both training and validation sets come from the exact same distribution, we do see a bit of overfitting. This is a topic we'll talk about more in the next chapter.
+
+Once training has finished, the `fitted` object above holds a history of epoch-wise metrics, as well as references to a number of important objects involved in the training process. Among the latter is the fitted model itself -- which enables an easy way to obtain predictions on the test set:\index{\texttt{predict()} (luz)}
+
+```{r}
+fitted %>% predict(test_dl)
+```
+
+    torch_tensor
+     0.7799
+     1.7839
+    -1.1294
+    -1.3002
+    -1.8169
+    -1.6762
+    -0.7548
+    -1.2041
+     2.9613
+    -0.9551
+     0.7714
+    -0.8265
+     1.1334
+    -2.8406
+    -1.1679
+     0.8350
+     2.0134
+     2.1083
+     1.4093
+     0.6962
+    -0.3669
+    -0.5292
+     2.0310
+    -0.5814
+     2.7494
+     0.7855
+    -0.5263
+    -1.1257
+    -3.3117
+     0.6157
+    ... [the output was truncated (use n=-1 to disable)]
+    [ CPUFloatType{200,1} ]
+
+We also want to evaluate performance on the test set:\index{\texttt{evaluate()} (luz)}
+
+```{r}
+fitted %>% evaluate(test_dl)
+```
+
+    A `luz_module_evaluation`
+    ── Results 
+    loss: 0.9271
+    mae: 0.7348
+
+This workflow of: training and validation in lock-step, then checking and extracting predictions on the test set is something we'll encounter times and again in this book.
+
+### Using callbacks to "hook" into the training process\index{callbacks (luz)}
+
+At this point, you may feel that what we've gained in code efficiency, we may have lost in flexibility. Coding the training loop yourself, you can arrange for all kinds of things to happen: save model weights, adjust the learning rate ... whatever you need.
+
+In reality, no flexibility is lost. Instead, `luz` offers a standardized way to achieve the same goals: callbacks. Callbacks are objects that can execute arbitrary R code, at any of the following points in time:
+
+-   when the overall training process starts or ends (`on_fit_begin()` / `on_fit_end()`);
+
+-   when an epoch (comprising training and validation) starts or ends (`on_epoch_begin()` / `on_epoch_end()`);
+
+-   when during an epoch, the training (validation, resp.) phase starts or ends (`on_train_begin()` / `on_train_end()`; `on_valid_begin()` / `on_valid_end()`);
+
+-   when during training (validation, resp.), a new batch is either about to be or has been processed (`on_train_batch_begin()` / `on_train_batch_end()`; `on_valid_batch_begin()` / `on_valid_batch_end()`);
+
+-   and even at specific landmarks inside the "innermost" training / validation logic, such as "after loss computation", "after `backward()`" or "after `step()`".
+
+While you can implement any logic you wish using callbacks (and we'll see how to do this in a later chapter), `luz` already comes equipped with a very useful set. For example:
+
+-   `luz_callback_model_checkpoint()` saves model weights after every epoch (or just in case of improvements, if so instructed).
+
+-   `luz_callback_lr_scheduler()` activates one of `torch`'s *learning rate schedulers*. Different scheduler objects exist, each following their own logic in dynamically updating the learning rate.
+
+-   `luz_callback_early_stopping()` terminates training once model performance stops to improve. What exactly "stops to improve" should mean is configurable by the user.
+
+Callbacks are passed to the `fit()` method in a list. For example, augmenting our most recent workflow:
+
+```{r}
+fitted <- net %>%
+  setup(
+    loss = nn_mse_loss(),
+    optimizer = optim_adam,
+    metrics = list(luz_metric_mae())
+  ) %>%
+  set_hparams(d_in = d_in,
+              d_hidden = d_hidden,
+              d_out = d_out) %>%
+  fit(
+    train_dl,
+    epochs = 200,
+    valid_data = valid_dl,
+    callbacks = list(
+      luz_callback_model_checkpoint(path = "./models/",
+                                    save_best_only = TRUE),
+      luz_callback_early_stopping(patience = 10)
+    )
+  )
+
+```
+
+With this configuration, weights will be saved, but only if validation loss decreases. Training will halt if there is no improvement (again, in validation loss) for ten epochs. With both callbacks, you can pick any other metric to base the decision on, and the metric in question may also refer to the training set.
+
+Here, we see early stopping happening after 111 epochs:
+
+    Epoch 1/200
+    Train metrics: Loss: 2.5803 - MAE: 1.2547
+    Valid metrics: Loss: 3.3763 - MAE: 1.4232
+    Epoch 2/200
+    Train metrics: Loss: 2.4767 - MAE: 1.229
+    Valid metrics: Loss: 3.2334 - MAE: 1.3909
+    ...
+    ...
+    Epoch 110/200
+    Train metrics: Loss: 1.011 - MAE: 0.8034
+    Valid metrics: Loss: 1.1673 - MAE: 0.8578
+    Epoch 111/200
+    Train metrics: Loss: 1.0108 - MAE: 0.8032
+    Valid metrics: Loss: 1.167 - MAE: 0.8578
+    Early stopping at epoch 111 of 200
+
+### How `luz` helps with devices\index{device handling (luz)}
+
+Finally, let's quickly mention how `luz` helps with device placement. Devices, in a usual environment, are the CPU and perhaps, if available, a GPU. For training, data and model weights need to be located on the same device. This can introduce complexities, and -- at the very least -- necessitates additional code to keep all pieces in sync.
+
+With `luz`, related actions happen transparently to the user. Let's take the prediction step from above:
+
+```{r}
+fitted %>% predict(test_dl)
+```
+
+In case this code was executed on a machine that has a GPU, `luz` will have detected that, and the model's weight tensors will already have been moved there. Now, for the above call to `predict()`, what happened "under the hood" was the following:
+
+-   `luz` put the model in evaluation mode, making sure that weights are not updated.
+-   `luz` moved the test data to the GPU, batch by batch, and obtained model predictions.
+-   These predictions were then moved back to the CPU, in anticipation of the caller wanting to process them further with R. (Conversion functions like `as.numeric()`, `as.matrix()` etc. can only act on CPU-resident tensors.)
+
+In the below appendix, you find a complete walk-through of how to implement the train-validate-test workflow by hand. You'll likely find this a lot more complex than what we did above -- and it does not even bring into play metrics, or any of the functionality afforded by `luz` callbacks.
+
+In the next chapter, we discuss essential ingredients of modern deep learning we haven't yet touched upon; and following that, we look at specific architectures destined to specifically handle different tasks and domains.
+
+## Appendix: A train-validate-test workflow implemented by hand
+
+For clarity, we repeat here the two things that do *not* depend on whether you're using `luz` or not: `dataloader()` preparation and model definition.
+
+```{r}
+
+# input dimensionality (number of input features)
+d_in <- 3
+# number of observations in training set
+n <- 1000
+
+x <- torch_randn(n, d_in)
+coefs <- c(0.2, -1.3, -0.5)
+y <- x$matmul(coefs)$unsqueeze(2) + torch_randn(n, 1)
+
+ds <- tensor_dataset(x, y)
+
+dl <- dataloader(ds, batch_size = 100, shuffle = TRUE)
+
+train_ids <- sample(1:length(ds), size = 0.6 * length(ds))
+valid_ids <- sample(setdiff(
+  1:length(ds),
+  train_ids
+), size = 0.2 * length(ds))
+test_ids <- setdiff(1:length(ds), union(train_ids, valid_ids))
+
+train_ds <- dataset_subset(ds, indices = train_ids)
+valid_ds <- dataset_subset(ds, indices = valid_ids)
+test_ds <- dataset_subset(ds, indices = test_ids)
+
+train_dl <- dataloader(train_ds,
+  batch_size = 100,
+  shuffle = TRUE
+)
+valid_dl <- dataloader(valid_ds, batch_size = 100)
+test_dl <- dataloader(test_ds, batch_size = 100)
+
+# dimensionality of hidden layer
+d_hidden <- 32
+# output dimensionality (number of predicted features)
+d_out <- 1
+
+net <- nn_module(
+  initialize = function(d_in, d_hidden, d_out) {
+    self$net <- nn_sequential(
+      nn_linear(d_in, d_hidden),
+      nn_relu(),
+      nn_linear(d_hidden, d_out)
+    )
+  },
+  forward = function(x) {
+    self$net(x)
+  }
+)
+```
+
+Recall that with `luz`, now all that separates you from watching how training and validation losses evolve is a snippet like this:
+
+```{r}
+fitted <- net %>%
+  setup(
+    loss = nn_mse_loss(),
+    optimizer = optim_adam
+  ) %>%
+  set_hparams(
+    d_in = d_in,
+    d_hidden = d_hidden, d_out = d_out
+  ) %>%
+  fit(train_dl, epochs = 200, valid_data = valid_dl)
+```
+
+Without `luz`, however, things to be taken care of fall into three distinct categories.
+
+First, instantiate the network, and, if CUDA is installed, move its weights to the GPU.
+
+```{r}
+device <- torch_device(if
+(cuda_is_available()) {
+  "cuda"
+} else {
+  "cpu"
+})
+
+model <- net(d_in = d_in, d_hidden = d_hidden, d_out = d_out)
+model <- model$to(device = device)
+
+```
+
+Second, create an optimizer.
+
+```{r}
+optimizer <- optim_adam(model$parameters)
+```
+
+And third, the biggest chunk: In each epoch, iterate over training batches as well as validation batches, performing backpropagation when working on the former, while just passively reporting losses when processing the latter.
+
+For clarity, we pack training logic and validation logic each into their own functions. `train_batch()` and `valid_batch()` will be called from inside loops over the respective batches. Those loops, in turn, will be executed for every epoch.
+
+While `train_batch()` and `valid_batch()`, per se, trigger the usual actions in the usual order, note the device placement calls: For the model to be able to take in the data, they have to live on the same device. Then, for mean-squared-error computation to be possible, the target tensors need to live there as well.
+
+```{r}
+
+train_batch <- function(b) {
+  optimizer$zero_grad()
+  output <- model(b[[1]]$to(device = device))
+  target <- b[[2]]$to(device = device)
+
+  loss <- nn_mse_loss(output, target)
+  loss$backward()
+  optimizer$step()
+
+  loss$item()
+}
+
+valid_batch <- function(b) {
+  output <- model(b[[1]]$to(device = device))
+  target <- b[[2]]$to(device = device)
+
+  loss <- nn_mse_loss(output, target)
+  loss$item()
+}
+
+```
+
+The loop over epochs contains two lines that deserve special attention: `model$train()` and `model$eval()`. The former instructs `torch` to put the model in training mode; the latter does the opposite. With the simple model we're using here, it wouldn't be a problem if you forgot those calls; however, when later we'll be using regularization layers like `nn_dropout()` and `nn_batch_norm2d()`, calling these methods in the correct places is essential. This is because these layers behave differently during evaluation and training.
+
+```{r}
+
+num_epochs <- 200
+
+for (epoch in 1:num_epochs) {
+  model$train()
+  train_loss <- c()
+
+  # use coro::loop() for stability and performance
+  coro::loop(for (b in train_dl) {
+    loss <- train_batch(b)
+    train_loss <- c(train_loss, loss)
+  })
+
+  cat(sprintf(
+    "\nEpoch %d, training: loss: %3.5f \n",
+    epoch, mean(train_loss)
+  ))
+
+  model$eval()
+  valid_loss <- c()
+
+  # disable gradient tracking to reduce memory usage
+  with_no_grad({ 
+    coro::loop(for (b in valid_dl) {
+      loss <- valid_batch(b)
+      valid_loss <- c(valid_loss, loss)
+    })  
+  })
+  
+  cat(sprintf(
+    "\nEpoch %d, validation: loss: %3.5f \n",
+    epoch, mean(valid_loss)
+  ))
+}
+```
+
+This completes our walk-through of manual training, and should have made more concrete my assertion that using `luz` significantly reduces the potential for casual (e.g., copy-paste) errors.
