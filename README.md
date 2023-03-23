@@ -1,5 +1,5 @@
-This is the repository for the book *Deep Learning and Scientific
-Computing with R torch*, written by [Sigrid
+This is the repository for the book [Deep Learning and Scientific
+Computing with R torch](https://skeydan.github.io/Deep-Learning-and-Scientific-Computing-with-R-torch/), written by [Sigrid
 Keydana](https://divergences.xyz/) and published by [CRC
 Press](https://doi.org/10.1201/9781003275923).
 
