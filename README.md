@@ -2,7 +2,7 @@ This is the repository for the book [Deep Learning and Scientific Computing with
 
 A list of errata may be found in `errata.md`.
 
-To cite using `bibtex`, do
+To cite using `bibtex`, you could use
 
 ```
 @book{keydana2023deep,
