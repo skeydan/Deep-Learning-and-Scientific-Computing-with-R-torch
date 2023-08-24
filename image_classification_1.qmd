@@ -416,6 +416,7 @@ fitted <- convnet %>%
   fit(train_dl,
       epochs = 50,
       valid_data = valid_dl,
+      accelerator = accelerator(cpu = TRUE),
       verbose = TRUE
       )
 
