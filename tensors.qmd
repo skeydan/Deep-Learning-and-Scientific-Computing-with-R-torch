@@ -686,7 +686,7 @@ Now, we have sums over rows. Did we misunderstand something about how `torch` or
 
 Instead, the conceptual difference is specific to aggregating, or "grouping", operations. In R, *grouping*, in fact, nicely characterizes what we have in mind: We group by row (dimension 1) for row summaries, by column (dimension 2) for column summaries. In `torch`, the thinking is different: We *collapse* the columns (dimension 2) to compute row summaries, the rows (dimension 1) for column summaries.
 
-The same thinking applies in higher dimensions. Assume, for example, that we been recording time series data for four individuals. There are two features, and both of them have been measured at three times. If we were planning to train a recurrent neural network (much more on that later), we would arrange the measurements like so:
+The same thinking applies in higher dimensions. Assume, for example, that we have been recording time series data for four individuals. There are two features, and both of them have been measured at three times. If we were planning to train a recurrent neural network (much more on that later), we would arrange the measurements like so:
 
 -   Dimension 1: Runs over individuals.
 
@@ -759,7 +759,7 @@ Both indexing and slicing work essentially as in R. There are a few syntactic ex
 
 This is because just as in R, indexing in `torch` is one-based. And just as in R, singleton dimensions are dropped.
 
-In the below example, we ask for the first column of a two-dimensional tensor; the result is one-dimensional, i.e., a vector:
+In the below example, we ask for the first row of a two-dimensional tensor; the result is one-dimensional, i.e., a vector:
 
 ```{r}
 t <- torch_tensor(matrix(1:9, ncol = 3, byrow = TRUE))
@@ -1095,7 +1095,7 @@ m + m2
 
     Error in m + m2 : non-conformable arrays
 
-Neither does it help if we make `m2` a vector.
+Neither does it help if we make `m3` a vector.
 
 ```{r}
 m3 <- 1:5
@@ -1163,7 +1163,7 @@ Let's systematize these rules.
 
 ### Broadcasting rules
 
-The rules are the following. The first, unspectactular though it may look, is the basis for everything else.
+The rules are the following. The first, unspectacular though it may look, is the basis for everything else.
 
 (1) We align tensor shapes, *starting from the right*.
 
@@ -1199,4 +1199,4 @@ torch_zeros(4, 3, 2, 1)$add(torch_ones(4, 3, 2)) # error!
 
 ------------------------------------------------------------------------
 
-Now, that was one of the longest, and least applied-seeming, perhaps, chapters in the book. But feeling comfortable with tensors is, I dare say, a precondition for being fluent in `torch`. The same goes for the topic covered in the next chapter, automatic differentiation. But the difference is, there `torch` does *all* the heavy lifting for us. We just need to understand what it's doing.
+Now, that was one of the longest, and least applied-seeming, perhaps, chapters in the book. But feeling comfortable with tensors is, I dare say, a precondition for being fluent in `torch`. The same goes for the topic covered in the next chapter, automatic differentiation. But the difference is that `torch` does *all* the heavy lifting for us. We just need to understand what it's doing.

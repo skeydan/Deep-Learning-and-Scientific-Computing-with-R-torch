@@ -80,7 +80,7 @@ Each unit has its own value for bias, too.
 b1 <- torch_zeros(1, 8, requires_grad = TRUE)
 ```
 
-Just like we saw before, the hidden layer will multiply the input it receives by the weights and add the bias. That is, it applies the function $f$ displayed above. Then, another function is applied. This function receives its input from the hidden layer and produces the final output. In a nutshell, what is happening here is function composition: Calling the second function $g$, the overall transformation is $g(f(\mathbf{X})$, or $g \circ f$.
+Just like we saw before, the hidden layer will multiply the input it receives by the weights and add the bias. That is, it applies the function $f$ displayed above. Then, another function is applied. This function receives its input from the hidden layer and produces the final output. In a nutshell, what is happening here is function composition: Calling the second function $g$, the overall transformation is $g(f(\mathbf{X}))$, or $g \circ f$.
 
 For $g$ to yield an output analogous to the single-layer architecture above, its weight matrix has to take the eight-column hidden layer to a single column. That is, `w2` looks like this:
 

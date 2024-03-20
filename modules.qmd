@@ -92,7 +92,7 @@ output$size()
 
     [1] 50 16
 
-So that's the forward pass. How about gradient computation? Previously, when creating a tensor we wanted to figure as a "source" in gradient computation, we had to let `torch` know explicitly, passing `requires_grad = TRUE`. No such thing is required for built-in `nn_module()`s. We can immediately check that `output` knows what to do on `backward()`:
+So that's the forward pass. How about gradient computation? Previously, when creating a tensor, we wanted to figure out a "source" in gradient computation, we had to let `torch` know explicitly, passing `requires_grad = TRUE`. No such thing is required for built-in `nn_module()`s. We can immediately check that `output` knows what to do on `backward()`:
 
 ```{r}
 output$grad_fn
