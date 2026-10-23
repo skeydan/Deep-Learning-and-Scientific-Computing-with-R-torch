@@ -144,7 +144,7 @@ Thus, once you work with `nn_module`s, `torch` automatically assumes that you'll
 
 The built-in `nn_module()`s give us *layers*, in usual speak. How do we combine those into *models*? Using the "factory function" `nn_module()`, we can define models of arbitrary complexity. But we may not always need to go that way.
 
-### Models as sequences of layers: `nn_sequential()`index{`nn_sequential()`}
+### Models as sequences of layers: `nn_sequential()`
 
 If all our model should do is propagate straight through the layers, we can use `nn_sequential()` to build it. Models consisting of all linear layers are known as *Multi-Layer Perceptrons*index{Multi-Layer Perceptron (MLP)} (MLPs). Here is one:
 
